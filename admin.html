@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QUIAR | Panel de Administración</title>
+
+    <!-- Fuentes, Font Awesome CDN y Estilos -->
+    <link rel="stylesheet" href="admin.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- * PANTALLA DE LOGIN (MODAL / OVERLAY) -->
+    <div id="login-screen" class="login-overlay">
+      <div class="login-card">
+        <div class="login-header">
+          <img
+            src="imagenes/ISOTIPO QUIAR.png"
+            alt="Logo QUIAR"
+            class="login-logo"
+          />
+          <span class="badge-accent"
+            ><i class="fa-solid fa-lock"></i> ACCESO RESTRINGIDO</span
+          >
+        </div>
+        <h2>SISTEMA DE GESTIÓN</h2>
+        <p class="login-sub">
+          Ingrese sus credenciales corporativas para continuar
+        </p>
+
+        <form
+          id="login-form"
+          onsubmit="
+            event.preventDefault();
+            showAdminApp();
+          "
+        >
+          <div class="form-group">
+            <label
+              ><i class="fa-solid fa-envelope"></i> CORREO ELECTRÓNICO</label
+            >
+            <input type="email" value="admin@quiar.com.mx" required />
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-key"></i> CONTRASEÑA</label>
+            <input type="password" value="••••••••••••" required />
+          </div>
+
+          <div class="form-group">
+            <label
+              ><i class="fa-solid fa-user-shield"></i> ROL DE USUARIO</label
+            >
+            <select required>
+              <option value="admin">Administrador General</option>
+              <option value="ventas">Gestor de Ventas</option>
+              <option value="almacen">Encargado de Inventario</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-gold btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> INICIAR SESIÓN
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- * ESTRUCTURA PRINCIPAL DEL DASHBOARD -->
+    <div id="admin-app" class="admin-wrapper hidden">
+      <!-- BARRA LATERAL / SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <a href="index.html">
+            <img
+              src="imagenes/ISOTIPO QUIAR PNG.png"
+              alt="QUIAR Isotipo"
+              class="brand-logo"
+            />
+          </a>
+          <div class="brand-info">
+            <span class="brand-title">QUIAR MX</span>
+            <span class="brand-subtitle">SISTEMA DE GESTIÓN</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a
+            href="#dashboard"
+            class="nav-item active"
+            onclick="switchTab('dashboard', this)"
+          >
+            <i class="fa-solid fa-chart-pie"></i> Dashboard
+          </a>
+          <a
+            href="#cotizaciones"
+            class="nav-item"
+            onclick="switchTab('cotizaciones', this)"
+          >
+            <i class="fa-solid fa-file-invoice-dollar"></i> Cotizaciones y
+            Pedidos
+          </a>
+          <a
+            href="#inventario"
+            class="nav-item"
+            onclick="switchTab('inventario', this)"
+          >
+            <i class="fa-solid fa-boxes-stacked"></i> Inventario
+          </a>
+          <a
+            href="#clientes"
+            class="nav-item"
+            onclick="switchTab('clientes', this)"
+          >
+            <i class="fa-solid fa-users-gear"></i> Cartera de Clientes
+          </a>
+          <a
+            href="#proveedores"
+            class="nav-item"
+            onclick="switchTab('proveedores', this)"
+          >
+            <i class="fa-solid fa-truck-field-un"></i> Proveedores & Comercio
+            Ext.
+          </a>
+          <a
+            href="#servicios"
+            class="nav-item"
+            onclick="switchTab('servicios', this)"
+          >
+            <i class="fa-solid fa-screwdriver-wrench"></i> Servicios
+            Especializados
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a href="index.html" class="btn-exit">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Volver a la página principal
+          </a>
+        </div>
+      </aside>
+
+      <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+      <main class="main-content">
+        <!-- HEADER TOP BAR -->
+        <header class="topbar">
+          <div class="topbar-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              placeholder="Buscar folio, cliente, código SKU..."
+            />
+          </div>
+          <div class="topbar-user">
+            <div class="user-info">
+              <span class="user-name">Administrador General</span>
+              <span class="user-role">admin@quiar.com.mx</span>
+            </div>
+            <div class="avatar"><i class="fa-solid fa-user-gear"></i></div>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- SECCIÓN 1: DASHBOARD GENERAL -->
+          <section id="view-dashboard" class="tab-view active">
+            <div class="page-title-bar">
+              <h2>DASHBOARD PRINCIPAL</h2>
+              <span class="date-badge"
+                ><i class="fa-regular fa-calendar"></i> Actualizado hoy</span
+              >
+            </div>
+
+            <!-- METRICAS / KPIS -->
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon gold">
+                  <i class="fa-solid fa-file-invoice"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">TOTAL COTIZACIONES</span>
+                  <span class="kpi-value">12</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon red">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">ALERTAS STOCK BAJO</span>
+                  <span class="kpi-value">6</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon navy">
+                  <i class="fa-solid fa-building-user"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">CLIENTES POR SECTOR</span>
+                  <span class="kpi-value">7</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon green">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">MOVIMIENTOS RECIENTES</span>
+                  <span class="kpi-value">30</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANELES SECUNDARIOS -->
+            <div class="dashboard-panels-grid">
+              <div class="panel-card">
+                <h3>
+                  <i class="fa-solid fa-boxes-packing"></i> Inventario por
+                  Categoría
+                </h3>
+                <ul class="panel-list">
+                  <li>
+                    <span>Herramientas y Equipo</span>
+                    <strong>142 ítems</strong>
+                  </li>
+                  <li>
+                    <span>Equipo de Protección Personal</span>
+                    <strong>98 ítems</strong>
+                  </li>
+                  <li>
+                    <span>Material Eléctrico</span> <strong>64 ítems</strong>
+                  </li>
+                  <li>
+                    <span>Consumibles Industriales</span>
+                    <strong>210 ítems</strong>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="panel-card">
+                <h3>
+                  <i class="fa-solid fa-bell text-danger"></i> Stock Crítico
+                  Requerido
+                </h3>
+                <table class="simple-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Categoría</th>
+                      <th>Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Guantes de Nitrilo Industrial</td>
+                      <td>EPP</td>
+                      <td><span class="badge badge-danger">2 cajas</span></td>
+                    </tr>
+                    <tr>
+                      <td>Casco de Seguridad S/V</td>
+                      <td>Seguridad</td>
+                      <td><span class="badge badge-warning">6 pzas</span></td>
+                    </tr>
+                    <tr>
+                      <td>Cable THW 12 AWG (100m)</td>
+                      <td>Eléctrico</td>
+                      <td><span class="badge badge-danger">2 rollos</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 2: COTIZACIONES Y PEDIDOS -->
+          <section id="view-cotizaciones" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>COTIZACIONES Y PEDIDOS</h2>
+                <p class="section-desc">
+                  Gestión integral de cotizaciones y pedidos de clientes
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-plus"></i> NUEVA COTIZACIÓN
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>FOLIO</th>
+                    <th>CLIENTE</th>
+                    <th>SECTOR</th>
+                    <th>FECHA</th>
+                    <th>MONTO TOTAL</th>
+                    <th>ESTADO</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>COT-2026-081</strong></td>
+                    <td>Magna International</td>
+                    <td>Manufactura</td>
+                    <td>04/09/2026</td>
+                    <td>USD $18,500</td>
+                    <td><span class="badge badge-success">Aprobada</span></td>
+                    <td>
+                      <button class="btn-icon">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>COT-2026-082</strong></td>
+                    <td>Minera Peñoles</td>
+                    <td>Minería</td>
+                    <td>02/09/2026</td>
+                    <td>MXN $124,000</td>
+                    <td><span class="badge badge-warning">Pendiente</span></td>
+                    <td>
+                      <button class="btn-icon">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>COT-2026-083</strong></td>
+                    <td>CFE - Zona Noreste</td>
+                    <td>Energía</td>
+                    <td>01/09/2026</td>
+                    <td>MXN $89,500</td>
+                    <td><span class="badge badge-navy">En Proceso</span></td>
+                    <td>
+                      <button class="btn-icon">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 3: INVENTARIO -->
+          <section id="view-inventario" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>CONTROL DE INVENTARIO</h2>
+                <p class="section-desc">
+                  Catálogo de productos, insumos y control de existencias
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-box-archive"></i> NUEVO PRODUCTO
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>CÓDIGO</th>
+                    <th>PRODUCTO</th>
+                    <th>CATEGORÍA</th>
+                    <th>MARCA</th>
+                    <th>STOCK</th>
+                    <th>PRECIO U.</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>FLK-87V</code></td>
+                    <td>Multímetro Digital FLUKE 87V</td>
+                    <td>Medición</td>
+                    <td>Fluke</td>
+                    <td>32 pzas</td>
+                    <td>$14,200 MXN</td>
+                    <td>
+                      <button class="btn-icon">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>CAS-S100</code></td>
+                    <td>Casco de Seguridad S/V</td>
+                    <td>EPP</td>
+                    <td>MSA</td>
+                    <td>6 pzas</td>
+                    <td>$340 MXN</td>
+                    <td>
+                      <button class="btn-icon">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>GUA-NIT</code></td>
+                    <td>Guantes de Nitrilo Industrial</td>
+                    <td>Seguridad</td>
+                    <td>Ansell</td>
+                    <td>2 cajas</td>
+                    <td>$480 MXN</td>
+                    <td>
+                      <button class="btn-icon">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 4: CARTERA DE CLIENTES -->
+          <section id="view-clientes" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>CARTERA DE CLIENTES</h2>
+                <p class="section-desc">
+                  Directorio de empresas e instituciones atendidas
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-user-plus"></i> NUEVO CLIENTE
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>EMPRESA</th>
+                    <th>SECTOR</th>
+                    <th>CONTACTO</th>
+                    <th>TELÉFONO</th>
+                    <th>CORREO ELECTRÓNICO</th>
+                    <th>CIUDAD</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Magna International</strong></td>
+                    <td>Manufactura</td>
+                    <td>Lic. José Pablo Ochoa</td>
+                    <td>662-859-9737</td>
+                    <td>LicPabloochoa@magna.com</td>
+                    <td>Hermosillo</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Minera Peñoles</strong></td>
+                    <td>Minería</td>
+                    <td>Ing. Rodrigo Lopez</td>
+                    <td>87-1234-5678</td>
+                    <td>IngRodrigoLopez@penoles.com.mx</td>
+                    <td>Monterrey</td>
+                  </tr>
+                  <tr>
+                    <td><strong>CEMEX México</strong></td>
+                    <td>Construcción</td>
+                    <td>Arq. Elias Medina</td>
+                    <td>81-8220-1000</td>
+                    <td>ArqEliasMedina@cemex.com</td>
+                    <td>Obregón</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 5: PROVEEDORES Y COMERCIO EXTERIOR -->
+          <section id="view-proveedores" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>PROVEEDORES Y COMERCIO EXTERIOR</h2>
+                <p class="section-desc">
+                  Red de suministros nacional e importaciones
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-truck-fast"></i> NUEVO PROVEEDOR
+              </button>
+            </div>
+
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon navy">
+                  <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">TOTAL PROVEEDORES</span>
+                  <span class="kpi-value">14</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon gold">
+                  <i class="fa-solid fa-globe"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">INT. ACTIVOS</span>
+                  <span class="kpi-value">5</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon green">
+                  <i class="fa-solid fa-ship"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">PEDIMENTOS EN TRÁNSITO</span>
+                  <span class="kpi-value">3</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PROVEEDOR</th>
+                    <th>ORIGEN</th>
+                    <th>TIPO DE INSUMO</th>
+                    <th>TELÉFONO</th>
+                    <th>RELACIÓN COMERCIAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Ansell Corporation</strong></td>
+                    <td>Internacional (EUA)</td>
+                    <td>EPP y Protección</td>
+                    <td>+1 800 555 0199</td>
+                    <td><span class="badge badge-success">Activo</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Electro Industrial MX</strong></td>
+                    <td>Nacional (MX)</td>
+                    <td>Material Eléctrico</td>
+                    <td>81-1522-3000</td>
+                    <td><span class="badge badge-success">Activo</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- servicios especializados -->
+          <section id="view-servicios" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>SERVICIOS ESPECIALIZADOS</h2>
+                <p class="section-desc">
+                  Asignación y seguimiento de proyectos técnicos
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-plus-circle"></i> NUEVO SERVICIO
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>SERVICIO</th>
+                    <th>SOLICITANTE</th>
+                    <th>ESPECIALISTA ASIGNADO</th>
+                    <th>FECHA INICIO</th>
+                    <th>ESTADO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <strong>Mantenimiento Industrial Subestación</strong>
+                    </td>
+                    <td>Ternium México</td>
+                    <td>Ing. José Pablo Ochoa</td>
+                    <td>05/09/2026</td>
+                    <td><span class="badge badge-navy">En Curso</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Supervisión de Malla Minera</strong></td>
+                    <td>Grupo México</td>
+                    <td>Ing. Rodrigo López</td>
+                    <td>01/09/2026</td>
+                    <td><span class="badge badge-success">Finalizado</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- Script interactivo básico -->
+    <script>
+      function showAdminApp() {
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("admin-app").classList.remove("hidden");
+      }
+
+      function switchTab(viewId, element) {
+        document
+          .querySelectorAll(".tab-view")
+          .forEach((tab) => tab.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => item.classList.remove("active"));
+
+        document.getElementById("view-" + viewId).classList.add("active");
+        element.classList.add("active");
+      }
+    </script>
+  </body>
+</html>
