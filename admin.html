@@ -58,12 +58,13 @@
 
           <div class="form-group">
             <label
-              ><i class="fa-solid fa-user-shield"></i> ROL DE USUARIO</label
+              ><i class="fa-solid fa-user-shield"></i> ROL DE USUARIO (RBAC)</label
             >
             <select required>
               <option value="admin">Administrador General</option>
               <option value="ventas">Gestor de Ventas</option>
-              <option value="almacen">Encargado de Inventario</option>
+              <option value="almacen">Encargado de Almacén</option>
+              <option value="servicios">Servicios Especializados</option>
             </select>
           </div>
 
@@ -105,15 +106,14 @@
             class="nav-item"
             onclick="switchTab('cotizaciones', this)"
           >
-            <i class="fa-solid fa-file-invoice-dollar"></i> Cotizaciones y
-            Pedidos
+            <i class="fa-solid fa-file-invoice-dollar"></i> Cotizaciones y Pedidos
           </a>
           <a
             href="#inventario"
             class="nav-item"
             onclick="switchTab('inventario', this)"
           >
-            <i class="fa-solid fa-boxes-stacked"></i> Inventario
+            <i class="fa-solid fa-boxes-stacked"></i> Inventario & Kardex
           </a>
           <a
             href="#clientes"
@@ -123,26 +123,45 @@
             <i class="fa-solid fa-users-gear"></i> Cartera de Clientes
           </a>
           <a
+            href="#sectores"
+            class="nav-item"
+            onclick="switchTab('sectores', this)"
+          >
+            <i class="fa-solid fa-industry"></i> Sectores Industriales
+          </a>
+          <a
             href="#proveedores"
             class="nav-item"
             onclick="switchTab('proveedores', this)"
           >
-            <i class="fa-solid fa-truck-field-un"></i> Proveedores & Comercio
-            Ext.
+            <i class="fa-solid fa-truck-field-un"></i> Proveedores & Ext.
+          </a>
+          <a
+            href="#especialistas"
+            class="nav-item"
+            onclick="switchTab('especialistas', this)"
+          >
+            <i class="fa-solid fa-user-tie"></i> Especialistas Téc.
           </a>
           <a
             href="#servicios"
             class="nav-item"
             onclick="switchTab('servicios', this)"
           >
-            <i class="fa-solid fa-screwdriver-wrench"></i> Servicios
-            Especializados
+            <i class="fa-solid fa-screwdriver-wrench"></i> Servicios Especializados
+          </a>
+          <a
+            href="#roles"
+            class="nav-item"
+            onclick="switchTab('roles', this)"
+          >
+            <i class="fa-solid fa-shield-halved"></i> Roles y Permisos (RBAC)
           </a>
         </nav>
 
         <div class="sidebar-footer">
           <a href="index.html" class="btn-exit">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i> Volver a la página principal
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Volver al sitio público
           </a>
         </div>
       </aside>
@@ -155,7 +174,7 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input
               type="text"
-              placeholder="Buscar folio, cliente, código SKU..."
+              placeholder="Buscar folio, cliente, código SKU o insumo..."
             />
           </div>
           <div class="topbar-user">
@@ -204,7 +223,7 @@
                   <i class="fa-solid fa-building-user"></i>
                 </div>
                 <div class="kpi-data">
-                  <span class="kpi-label">CLIENTES POR SECTOR</span>
+                  <span class="kpi-label">CLIENTES ACTIVOS</span>
                   <span class="kpi-value">7</span>
                 </div>
               </div>
@@ -214,7 +233,7 @@
                   <i class="fa-solid fa-arrows-rotate"></i>
                 </div>
                 <div class="kpi-data">
-                  <span class="kpi-label">MOVIMIENTOS RECIENTES</span>
+                  <span class="kpi-label">MOVIMIENTOS KARDEX</span>
                   <span class="kpi-value">30</span>
                 </div>
               </div>
@@ -224,8 +243,7 @@
             <div class="dashboard-panels-grid">
               <div class="panel-card">
                 <h3>
-                  <i class="fa-solid fa-boxes-packing"></i> Inventario por
-                  Categoría
+                  <i class="fa-solid fa-boxes-packing"></i> Inventario por Categoría
                 </h3>
                 <ul class="panel-list">
                   <li>
@@ -233,7 +251,7 @@
                     <strong>142 ítems</strong>
                   </li>
                   <li>
-                    <span>Equipo de Protección Personal</span>
+                    <span>Equipo de Protección Personal (EPP)</span>
                     <strong>98 ítems</strong>
                   </li>
                   <li>
@@ -248,15 +266,14 @@
 
               <div class="panel-card">
                 <h3>
-                  <i class="fa-solid fa-bell text-danger"></i> Stock Crítico
-                  Requerido
+                  <i class="fa-solid fa-bell text-danger"></i> Stock Crítico (Bajo MinStock)
                 </h3>
                 <table class="simple-table">
                   <thead>
                     <tr>
                       <th>Producto</th>
                       <th>Categoría</th>
-                      <th>Stock</th>
+                      <th>Stock Actual</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -301,9 +318,11 @@
                   <tr>
                     <th>FOLIO</th>
                     <th>CLIENTE</th>
-                    <th>SECTOR</th>
                     <th>FECHA</th>
-                    <th>MONTO TOTAL</th>
+                    <th>SUBTOTAL</th>
+                    <th>DESCUENTO</th> <!-- Agregado aquí -->
+                    <th>IVA (16%)</th>
+                    <th>TOTAL</th>
                     <th>ESTADO</th>
                     <th>ACCIONES</th>
                   </tr>
@@ -312,40 +331,27 @@
                   <tr>
                     <td><strong>COT-2026-081</strong></td>
                     <td>Magna International</td>
-                    <td>Manufactura</td>
                     <td>04/09/2026</td>
-                    <td>USD $18,500</td>
+                    <td>$17,000.00 USD</td>
+                    <td><span class="text-danger">-$500.00 USD</span></td> <!-- Dato de descuento -->
+                    <td>$2,551.72 USD</td>
+                    <td><strong>$18,500.00 USD</strong></td>
                     <td><span class="badge badge-success">Aprobada</span></td>
                     <td>
-                      <button class="btn-icon">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                      </button>
+                      <button class="btn-icon"><i class="fa-solid fa-pen-to-square"></i></button>
                     </td>
                   </tr>
                   <tr>
                     <td><strong>COT-2026-082</strong></td>
                     <td>Minera Peñoles</td>
-                    <td>Minería</td>
                     <td>02/09/2026</td>
-                    <td>MXN $124,000</td>
+                    <td>$120,000.00 MXN</td>
+                    <td><span class="text-danger">-$4,000.00 MXN</span></td> <!-- Dato de descuento -->
+                    <td>$17,103.45 MXN</td>
+                    <td><strong>$124,000.00 MXN</strong></td>
                     <td><span class="badge badge-warning">Pendiente</span></td>
                     <td>
-                      <button class="btn-icon">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>COT-2026-083</strong></td>
-                    <td>CFE - Zona Noreste</td>
-                    <td>Energía</td>
-                    <td>01/09/2026</td>
-                    <td>MXN $89,500</td>
-                    <td><span class="badge badge-navy">En Proceso</span></td>
-                    <td>
-                      <button class="btn-icon">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                      </button>
+                      <button class="btn-icon"><i class="fa-solid fa-pen-to-square"></i></button>
                     </td>
                   </tr>
                 </tbody>
@@ -353,13 +359,13 @@
             </div>
           </section>
 
-          <!-- SECCIÓN 3: INVENTARIO -->
+          <!-- SECCIÓN 3: INVENTARIO & KARDEX -->
           <section id="view-inventario" class="tab-view">
             <div class="page-title-bar">
               <div>
-                <h2>CONTROL DE INVENTARIO</h2>
+                <h2>CONTROL DE INVENTARIO Y KARDEX</h2>
                 <p class="section-desc">
-                  Catálogo de productos, insumos y control de existencias
+                  Catálogo de productos con atributos independientes según el modelo relacional
                 </p>
               </div>
               <button class="btn btn-gold">
@@ -371,12 +377,16 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>CÓDIGO</th>
+                    <th>SKU</th>
                     <th>PRODUCTO</th>
                     <th>CATEGORÍA</th>
                     <th>MARCA</th>
+                    <th>ORIGEN</th>
                     <th>STOCK</th>
-                    <th>PRECIO U.</th>
+                    <th>MÍN.</th>
+                    <th>P. COMPRA (Admin)</th>
+                    <th>P. VENTA</th>
+                    <th>UBICACIÓN</th>
                     <th>ACCIONES</th>
                   </tr>
                 </thead>
@@ -386,12 +396,14 @@
                     <td>Multímetro Digital FLUKE 87V</td>
                     <td>Medición</td>
                     <td>Fluke</td>
-                    <td>32 pzas</td>
-                    <td>$14,200 MXN</td>
+                    <td>Importado</td>
+                    <td><strong>32</strong></td>
+                    <td>5</td>
+                    <td><span class="text-secure">$10,500 MXN</span></td>
+                    <td><strong>$14,200 MXN</strong></td>
+                    <td>Pasillo 2, Estante B</td>
                     <td>
-                      <button class="btn-icon">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                      </button>
+                      <button class="btn-icon"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                     </td>
                   </tr>
                   <tr>
@@ -399,12 +411,14 @@
                     <td>Casco de Seguridad S/V</td>
                     <td>EPP</td>
                     <td>MSA</td>
-                    <td>6 pzas</td>
-                    <td>$340 MXN</td>
+                    <td>Nacional</td>
+                    <td><strong class="text-warning">6</strong></td>
+                    <td>10</td>
+                    <td><span class="text-secure">$220 MXN</span></td>
+                    <td><strong>$340 MXN</strong></td>
+                    <td>Bodega Central, Estante 1</td>
                     <td>
-                      <button class="btn-icon">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                      </button>
+                      <button class="btn-icon"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                     </td>
                   </tr>
                   <tr>
@@ -412,12 +426,14 @@
                     <td>Guantes de Nitrilo Industrial</td>
                     <td>Seguridad</td>
                     <td>Ansell</td>
-                    <td>2 cajas</td>
-                    <td>$480 MXN</td>
+                    <td>Importado</td>
+                    <td><strong class="text-danger">2</strong></td>
+                    <td>8</td>
+                    <td><span class="text-secure">$310 MXN</span></td>
+                    <td><strong>$480 MXN</strong></td>
+                    <td>Bodega Central, Estante 3</td>
                     <td>
-                      <button class="btn-icon">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                      </button>
+                      <button class="btn-icon"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                     </td>
                   </tr>
                 </tbody>
@@ -431,7 +447,7 @@
               <div>
                 <h2>CARTERA DE CLIENTES</h2>
                 <p class="section-desc">
-                  Directorio de empresas e instituciones atendidas
+                  Directorio corporativo vinculado por sector industrial
                 </p>
               </div>
               <button class="btn btn-gold">
@@ -445,49 +461,90 @@
                   <tr>
                     <th>EMPRESA</th>
                     <th>SECTOR</th>
-                    <th>CONTACTO</th>
-                    <th>TELÉFONO</th>
-                    <th>CORREO ELECTRÓNICO</th>
-                    <th>CIUDAD</th>
+                    <th>CONTACTO Y PUESTO</th>
+                    <th>TELÉFONO & CORREO</th>
+                    <th>TIPO / CIUDAD</th>
+                    <th>ESTADO</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><strong>Magna International</strong></td>
                     <td>Manufactura</td>
-                    <td>Lic. José Pablo Ochoa</td>
-                    <td>662-859-9737</td>
-                    <td>LicPabloochoa@magna.com</td>
-                    <td>Hermosillo</td>
+                    <td>Lic. José Pablo Ochoa<br><small>Gerente de Planta</small></td>
+                    <td>662-859-9737<br>LicPabloochoa@magna.com</td>
+                    <td>Corporativo / Hermosillo</td>
+                    <td><span class="badge badge-success">Activo</span></td>
                   </tr>
                   <tr>
                     <td><strong>Minera Peñoles</strong></td>
                     <td>Minería</td>
-                    <td>Ing. Rodrigo Lopez</td>
-                    <td>87-1234-5678</td>
-                    <td>IngRodrigoLopez@penoles.com.mx</td>
-                    <td>Monterrey</td>
-                  </tr>
-                  <tr>
-                    <td><strong>CEMEX México</strong></td>
-                    <td>Construcción</td>
-                    <td>Arq. Elias Medina</td>
-                    <td>81-8220-1000</td>
-                    <td>ArqEliasMedina@cemex.com</td>
-                    <td>Obregón</td>
+                    <td>Ing. Rodrigo Lopez<br><small>Jefe de Mantenimiento</small></td>
+                    <td>87-1234-5678<br>IngRodrigoLopez@penoles.com.mx</td>
+                    <td>Industrial / Monterrey</td>
+                    <td><span class="badge badge-success">Activo</span></td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
 
-          <!-- SECCIÓN 5: PROVEEDORES Y COMERCIO EXTERIOR -->
+          <!-- SECCIÓN 5: SECTORES INDUSTRIALES -->
+          <section id="view-sectores" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>SECTORES INDUSTRIALES</h2>
+                <p class="section-desc">
+                  Clasificación de clientes y mercados atendidos por la comercializadora
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-plus"></i> NUEVO SECTOR
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID SECTOR</th>
+                    <th>NOMBRE DEL SECTOR INDUSTRIAL</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td><strong>Manufactura y Automotriz</strong></td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-pen"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td><strong>Minería y Extracción</strong></td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-pen"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td><strong>Construcción e Infraestructura</strong></td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-pen"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td><strong>Energía y Eléctrico</strong></td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-pen"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 6: PROVEEDORES Y COMERCIO EXTERIOR -->
           <section id="view-proveedores" class="tab-view">
             <div class="page-title-bar">
               <div>
                 <h2>PROVEEDORES Y COMERCIO EXTERIOR</h2>
                 <p class="section-desc">
-                  Red de suministros nacional e importaciones
+                  Red de suministros nacional e importaciones sincronizada con la entidad PROVEEDOR
                 </p>
               </div>
               <button class="btn btn-gold">
@@ -495,74 +552,99 @@
               </button>
             </div>
 
-            <div class="kpi-grid">
-              <div class="kpi-card">
-                <div class="kpi-icon navy">
-                  <i class="fa-solid fa-boxes-packing"></i>
-                </div>
-                <div class="kpi-data">
-                  <span class="kpi-label">TOTAL PROVEEDORES</span>
-                  <span class="kpi-value">14</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-icon gold">
-                  <i class="fa-solid fa-globe"></i>
-                </div>
-                <div class="kpi-data">
-                  <span class="kpi-label">INT. ACTIVOS</span>
-                  <span class="kpi-value">5</span>
-                </div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-icon green">
-                  <i class="fa-solid fa-ship"></i>
-                </div>
-                <div class="kpi-data">
-                  <span class="kpi-label">PEDIMENTOS EN TRÁNSITO</span>
-                  <span class="kpi-value">3</span>
-                </div>
-              </div>
-            </div>
-
             <div class="table-container">
               <table class="data-table">
                 <thead>
                   <tr>
                     <th>PROVEEDOR</th>
-                    <th>ORIGEN</th>
-                    <th>TIPO DE INSUMO</th>
+                    <th>CONTACTO</th>
                     <th>TELÉFONO</th>
-                    <th>RELACIÓN COMERCIAL</th>
+                    <th>CORREO ELECTRÓNICO</th>
+                    <th>PAÍS ORIGEN</th>
+                    <th>TIPO DE PROVEEDOR</th>
+                    <th>ESTADO</th>
+                    <th>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><strong>Ansell Corporation</strong></td>
-                    <td>Internacional (EUA)</td>
-                    <td>EPP y Protección</td>
+                    <td>Juan Pérez</td>
                     <td>+1 800 555 0199</td>
+                    <td>jperez@ansell.com</td>
+                    <td>Estados Unidos</td>
+                    <td>Internacional</td>
                     <td><span class="badge badge-success">Activo</span></td>
+                    <td>
+                      <button class="btn-icon"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </td>
                   </tr>
                   <tr>
                     <td><strong>Electro Industrial MX</strong></td>
-                    <td>Nacional (MX)</td>
-                    <td>Material Eléctrico</td>
+                    <td>Ing. Marco Ruiz</td>
                     <td>81-1522-3000</td>
+                    <td>mruiz@electroindustrial.mx</td>
+                    <td>México</td>
+                    <td>Nacional</td>
                     <td><span class="badge badge-success">Activo</span></td>
+                    <td>
+                      <button class="btn-icon"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
 
-          <!-- servicios especializados -->
+          <!-- SECCIÓN 7: ESPECIALISTAS TÉCNICOS -->
+          <section id="view-especialistas" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>ESPECIALISTAS TÉCNICOS</h2>
+                <p class="section-desc">
+                  Personal técnico certificado para servicios especializados
+                </p>
+              </div>
+              <button class="btn btn-gold">
+                <i class="fa-solid fa-user-plus"></i> NUEVO ESPECIALISTA
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>NOMBRE DEL TÉCNICO</th>
+                    <th>ESPECIALIDAD</th>
+                    <th>TELÉFONO</th>
+                    <th>ESTADO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Ing. José Pablo Ochoa</strong></td>
+                    <td>Subestaciones y Media Tensión</td>
+                    <td>662-859-9737</td>
+                    <td><span class="badge badge-success">Disponible</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Ing. Rodrigo López</strong></td>
+                    <td>Estructuras y Mallas Mineras</td>
+                    <td>87-1234-5678</td>
+                    <td><span class="badge badge-warning">En Servicio</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 8: SERVICIOS ESPECIALIZADOS -->
           <section id="view-servicios" class="tab-view">
             <div class="page-title-bar">
               <div>
                 <h2>SERVICIOS ESPECIALIZADOS</h2>
                 <p class="section-desc">
-                  Asignación y seguimiento de proyectos técnicos
+                  Asignación y seguimiento de proyectos técnicos a clientes
                 </p>
               </div>
               <button class="btn btn-gold">
@@ -574,39 +656,134 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>SERVICIO</th>
-                    <th>SOLICITANTE</th>
+                    <th>DESCRIPCIÓN REQUERIMIENTO</th>
+                    <th>CLIENTE SOLICITANTE</th>
                     <th>ESPECIALISTA ASIGNADO</th>
-                    <th>FECHA INICIO</th>
+                    <th>FECHAS (Solicitud / Prog.)</th>
                     <th>ESTADO</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>
-                      <strong>Mantenimiento Industrial Subestación</strong>
-                    </td>
+                    <td><strong>Mantenimiento Industrial Subestación</strong></td>
                     <td>Ternium México</td>
                     <td>Ing. José Pablo Ochoa</td>
-                    <td>05/09/2026</td>
+                    <td>01/09/2026 → 05/09/2026</td>
                     <td><span class="badge badge-navy">En Curso</span></td>
                   </tr>
                   <tr>
                     <td><strong>Supervisión de Malla Minera</strong></td>
                     <td>Grupo México</td>
                     <td>Ing. Rodrigo López</td>
-                    <td>01/09/2026</td>
+                    <td>28/08/2026 → 01/09/2026</td>
                     <td><span class="badge badge-success">Finalizado</span></td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
+
+          <!-- SECCIÓN 9: CONTROL DE ACCESO, ROLES Y USUARIOS (RBAC) -->
+          <section id="view-roles" class="tab-view">
+            <div class="page-title-bar">
+              <div>
+                <h2>GESTIÓN DE ROLES, PERMISOS Y USUARIOS</h2>
+                <p class="section-desc">
+                  Matriz de permisos (Módulo / Acción) y administración de usuarios corporativos
+                </p>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-outline">
+                  <i class="fa-solid fa-user-plus"></i> NUEVO USUARIO
+                </button>
+                <button class="btn btn-gold">
+                  <i class="fa-solid fa-shield-cat"></i> NUEVO ROL
+                </button>
+              </div>
+            </div>
+
+            <!-- TABLA 1: MATRIZ DE ROLES Y PERMISOS (ROL + ROL_PERMISO + PERMISO) -->
+            <div class="table-container mb-4">
+              <h3 class="table-title"><i class="fa-solid fa-user-shield"></i> Roles y Permisos Asignados</h3>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ROL (nombreRol)</th>
+                    <th>DESCRIPCIÓN (descripcion)</th>
+                    <th>PERMISOS CONFIGURADOS (Módulo : Acción)</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Administrador General</strong></td>
+                    <td>Control total del sistema y gestión de costos de adquisición</td>
+                    <td>
+                      <span class="badge badge-navy">Todos los Módulos : CRUD Total</span>
+                      <span class="badge badge-gold">Inventario : Ver Precio Compra</span>
+                    </td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-gear"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Ventas</strong></td>
+                    <td>Gestión de clientes y emisión de cotizaciones comercializadora</td>
+                    <td>
+                      <span class="badge badge-navy">Clientes : Crear, Leer, Editar</span>
+                      <span class="badge badge-navy">Cotizaciones : Crear, Leer, Editar</span>
+                    </td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-gear"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Almacén</strong></td>
+                    <td>Control de existencias y registro de entradas/salidas en Kardex</td>
+                    <td>
+                      <span class="badge badge-navy">Inventario : Leer, Editar Stock</span>
+                      <span class="badge badge-navy">Movimientos : Crear Entrada/Salida</span>
+                    </td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-gear"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- TABLA 2: DIRECTORIO DE USUARIOS DEL SISTEMA (USUARIO) -->
+            <div class="table-container">
+              <h3 class="table-title"><i class="fa-solid fa-users"></i> Usuarios Activos en el Sistema</h3>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>NOMBRE COMPLETO</th>
+                    <th>CORREO ELECTRÓNICO</th>
+                    <th>ROL ASIGNADO</th>
+                    <th>ESTADO</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Administrador General</strong></td>
+                    <td>admin@quiar.com.mx</td>
+                    <td>Administrador General</td>
+                    <td><span class="badge badge-success">Activo</span></td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-user-pen"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Lic. José Pablo Ochoa</strong></td>
+                    <td>jp.ochoa@quiar.com.mx</td>
+                    <td>Ventas</td>
+                    <td><span class="badge badge-success">Activo</span></td>
+                    <td><button class="btn-icon"><i class="fa-solid fa-user-pen"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
         </div>
       </main>
     </div>
 
-    <!-- Script interactivo básico -->
+    <!-- Script interactivo y manejo de pestañas -->
     <script>
       function showAdminApp() {
         document.getElementById("login-screen").classList.add("hidden");
