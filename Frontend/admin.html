@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QUIAR | Panel de Administración</title>
+
+    <!-- Fuentes, Font Awesome CDN y Estilos -->
+    <link rel="stylesheet" href="admin.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- * PANTALLA DE LOGIN (MODAL / OVERLAY) -->
+    <div id="login-screen" class="login-overlay">
+      <div class="login-card">
+        <div class="login-header">
+          <img
+            src="QUIAR/imagenes/ISOTIPO QUIAR.png"
+            alt="Logo QUIAR"
+            class="login-logo"
+          />
+          <span class="badge-accent"
+            ><i class="fa-solid fa-lock"></i> ACCESO RESTRINGIDO</span
+          >
+        </div>
+        <h2>SISTEMA DE GESTIÓN</h2>
+        <p class="login-sub">
+          Ingrese sus credenciales corporativas para continuar
+        </p>
+
+        <form
+          id="login-form"
+          onsubmit="
+            event.preventDefault();
+            showAdminApp();
+          "
+        >
+          <div class="form-group">
+            <label
+              ><i class="fa-solid fa-envelope"></i> CORREO ELECTRÓNICO</label
+            >
+            <input type="email" value="admin@quiar.com.mx" required />
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-key"></i> CONTRASEÑA</label>
+            <input type="password" value="••••••••••••" required />
+          </div>
+
+          <div class="form-group">
+            <label
+              ><i class="fa-solid fa-user-shield"></i> ROL DE USUARIO (RBAC)</label
+            >
+            <select required>
+              <option value="admin">Administrador General</option>
+              <option value="ventas">Gestor de Ventas</option>
+              <option value="almacen">Encargado de Almacén</option>
+              <option value="servicios">Servicios Especializados</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-gold btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> INICIAR SESIÓN
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- * ESTRUCTURA PRINCIPAL DEL DASHBOARD -->
+    <div id="admin-app" class="admin-wrapper hidden">
+      <!-- BARRA LATERAL / SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <a href="index.html">
+            <img
+              src="imagenes/ISOTIPO QUIAR PNG.png"
+              alt="QUIAR Isotipo"
+              class="brand-logo"
+            />
+          </a>
+          <div class="brand-info">
+            <span class="brand-title">QUIAR MX</span>
+            <span class="brand-subtitle">SISTEMA DE GESTIÓN</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a
+            href="#dashboard"
+            class="nav-item active"
+            onclick="switchTab('dashboard', this)"
+          >
+            <i class="fa-solid fa-chart-pie"></i> Dashboard
+          </a>
+          <a
+            href="#cotizaciones"
+            class="nav-item"
+            onclick="switchTab('cotizaciones', this)"
+          >
+            <i class="fa-solid fa-file-invoice-dollar"></i> Cotizaciones y Pedidos
+          </a>
+          <a
+            href="#inventario"
+            class="nav-item"
+            onclick="switchTab('inventario', this)"
+          >
+            <i class="fa-solid fa-boxes-stacked"></i> Inventario & Kardex
+          </a>
+          <a
+            href="#clientes"
+            class="nav-item"
+            onclick="switchTab('clientes', this)"
+          >
+            <i class="fa-solid fa-users-gear"></i> Cartera de Clientes
+          </a>
+          <a
+            href="#sectores"
+            class="nav-item"
+            onclick="switchTab('sectores', this)"
+          >
+            <i class="fa-solid fa-industry"></i> Sectores Industriales
+          </a>
+          <a
+            href="#proveedores"
+            class="nav-item"
+            onclick="switchTab('proveedores', this)"
+          >
+            <i class="fa-solid fa-truck-field-un"></i> Proveedores & Ext.
+          </a>
+          <a
+            href="#especialistas"
+            class="nav-item"
+            onclick="switchTab('especialistas', this)"
+          >
+            <i class="fa-solid fa-user-tie"></i> Especialistas Téc.
+          </a>
+          <a
+            href="#servicios"
+            class="nav-item"
+            onclick="switchTab('servicios', this)"
+          >
+            <i class="fa-solid fa-screwdriver-wrench"></i> Servicios Especializados
+          </a>
+          <a
+            href="#roles"
+            class="nav-item"
+            onclick="switchTab('roles', this)"
+          >
+            <i class="fa-solid fa-shield-halved"></i> Roles y Permisos (RBAC)
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a href="index.html" class="btn-exit">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Volver al sitio público
+          </a>
+        </div>
+      </aside>
+
+      <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+      <main class="main-content">
+        <!-- HEADER TOP BAR -->
+        <header class="topbar">
+          <div class="topbar-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              placeholder="Buscar folio, cliente, código SKU o insumo..."
+            />
+          </div>
+          <div class="topbar-user">
+            <div class="user-info">
+              <span class="user-name">Administrador General</span>
+              <span class="user-role">admin@quiar.com.mx</span>
+            </div>
+            <div class="avatar"><i class="fa-solid fa-user-gear"></i></div>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- SECCIÓN 1: DASHBOARD GENERAL -->
+          <section id="view-dashboard" class="tab-view active">
+            <div class="page-title-bar">
+              <h2>DASHBOARD PRINCIPAL</h2>
+              <span class="date-badge"
+                ><i class="fa-regular fa-calendar"></i> Actualizado hoy</span
+              >
+            </div>
+
+            <!-- METRICAS / KPIS -->
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon gold">
+                  <i class="fa-solid fa-file-invoice"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">TOTAL COTIZACIONES</span>
+                  <span class="kpi-value">12</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon red">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">ALERTAS STOCK BAJO</span>
+                  <span class="kpi-value">6</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon navy">
+                  <i class="fa-solid fa-building-user"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">CLIENTES ACTIVOS</span>
+                  <span class="kpi-value">7</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-icon green">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+                <div class="kpi-data">
+                  <span class="kpi-label">MOVIMIENTOS KARDEX</span>
+                  <span class="kpi-value">30</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANELES SECUNDARIOS -->
+            <div class="dashboard-panels-grid">
+              <div class="panel-card">
+                <h3>
+                  <i class="fa-solid fa-boxes-packing"></i> Inventario por Categoría
+                </h3>
+                <ul class="panel-list">
+                  <li>
+                    <span>Herramientas y Equipo</span>
+                    <strong>142 ítems</strong>
+                  </li>
+                  <li>
+                    <span>Equipo de Protección Personal (EPP)</span>
+                    <strong>98 ítems</strong>
+                  </li>
+                  <li>
+                    <span>Material Eléctrico</span> <strong>64 ítems</strong>
+                  </li>
+                  <li>
+                    <span>Consumibles Industriales</span>
+                    <strong>210 ítems</strong>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="panel-card">
+                <h3>
+                  <i class="fa-solid fa-bell text-danger"></i> Stock Crítico (Bajo MinStock)
+                </h3>
+                <table class="simple-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Categoría</th>
+                      <th>Stock Actual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Guantes de Nitrilo Industrial</td>
+                      <td>EPP</td>
+                      <td><span class="badge badge-danger">2 cajas</span></td>
+                    </tr>
+                    <tr>
+                      <td>Casco de Seguridad S/V</td>
+                      <td>Seguridad</td>
+                      <td><span class="badge badge-warning">6 pzas</span></td>
+                    </tr>
+                    <tr>
+                      <td>Cable THW 12 AWG (100m)</td>
+                      <td>Eléctrico</td>
+                      <td><span class="badge badge-danger">2 rollos</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 2: COTIZACIONES Y PEDIDOS -->
+<section id="view-cotizaciones" class="tab-view">
+
+  <!-- MODAL PARA NUEVA COTIZACIÓN -->
+  <div id="quote-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nueva Cotización / Pedido</h3>
+        <button type="button" class="btn-close" onclick="closeQuoteModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="quote-form" onsubmit="addNewQuote(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Folio de Cotización</label>
+            <input type="text" id="q-folio" placeholder="Ej. COT-2026-095" required />
+          </div>
+          <div class="form-group">
+            <label>Cliente (Razón Social)</label>
+            <input type="text" id="q-client" placeholder="TechCorp México S.A. de C.V." required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha de Emisión</label>
+            <input type="date" id="q-date" required />
+          </div>
+          <div class="form-group">
+            <label>Estatus Inicial</label>
+            <select id="q-status" class="form-control" required>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Aprobada">Aprobada</option>
+              <option value="Enviada">Enviada</option>
+              <option value="Rechazada">Rechazada</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Monto Total ($)</label>
+            <input type="text" id="q-total" placeholder="Ej. $45,800 MXN" required />
+          </div>
+          <div class="form-group">
+            <label>Asesor / Responsable</label>
+            <input type="text" id="q-agent" placeholder="Ej. Administrador General" required />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeQuoteModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Cotización</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>COTIZACIONES Y PEDIDOS</h2>
+      <p class="section-desc">
+        Gestión y seguimiento de propuestas comerciales y órdenes de compra
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openQuoteModal()">
+      <i class="fa-solid fa-file-circle-plus"></i> NUEVA COTIZACIÓN
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>FOLIO</th>
+          <th>CLIENTE</th>
+          <th>FECHA</th>
+          <th>ESTATUS</th>
+          <th>MONTO TOTAL</th>
+          <th>ASESOR</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Puedes dejar filas de ejemplo aquí si gustas -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 3: INVENTARIO & KARDEX -->
+<section id="view-inventario" class="tab-view">
+
+  <!-- MODAL PARA NUEVO PRODUCTO -->
+  <div id="product-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-box-archive"></i> Registrar Nuevo Producto</h3>
+        <button type="button" class="btn-close" onclick="closeProductModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="product-form" onsubmit="addNewProduct(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKU / Código</label>
+            <input type="text" id="p-sku" placeholder="Ej. FLK-87V" required />
+          </div>
+          <div class="form-group">
+            <label>Nombre del Producto</label>
+            <input type="text" id="p-name" placeholder="Multímetro Digital" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categoría</label>
+            <input type="text" id="p-category" placeholder="Medición" required />
+          </div>
+          <div class="form-group">
+            <label>Marca</label>
+            <input type="text" id="p-brand" placeholder="Fluke" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Stock Inicial</label>
+            <input type="number" id="p-stock" placeholder="32" required />
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input type="number" id="p-min" placeholder="5" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Precio Compra ($)</label>
+            <input type="text" id="p-buy" placeholder="$10,500 MXN" required />
+          </div>
+          <div class="form-group">
+            <label>Precio Venta ($)</label>
+            <input type="text" id="p-sell" placeholder="$14,200 MXN" required />
+          </div>
+        </div>
+        <!-- FILA: ORIGEN Y UBICACIÓN -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Origen</label>
+            <select id="p-origin" required class="form-control">
+              <option value="Nacional">Nacional</option>
+              <option value="Importado">Importado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ubicación en Almacén</label>
+            <input type="text" id="p-location" placeholder="Pasillo 2, Estante B" required />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeProductModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>CONTROL DE INVENTARIO Y KARDEX</h2>
+      <p class="section-desc">
+        Catálogo de productos con atributos independientes según el modelo relacional
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openProductModal()">
+      <i class="fa-solid fa-box-archive"></i> NUEVO PRODUCTO
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>PRODUCTO</th>
+          <th>CATEGORÍA</th>
+          <th>MARCA</th>
+          <th>ORIGEN</th>
+          <th>STOCK</th>
+          <th>MÍN.</th>
+          <th>P. COMPRA (Admin)</th>
+          <th>P. VENTA</th>
+          <th>UBICACIÓN</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <!-- TBODY VACÍO PARA INICIAR DESDE CERO -->
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 4: CARTERA DE CLIENTES -->
+<section id="view-clientes" class="tab-view">
+
+  <!-- MODAL PARA NUEVO CLIENTE -->
+  <div id="client-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus"></i> Registrar Nuevo Cliente</h3>
+        <button type="button" class="btn-close" onclick="closeClientModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="client-form" onsubmit="addNewClient(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Razón Social / Empresa</label>
+            <input type="text" id="c-name" placeholder="Ej. TechCorp México S.A. de C.V." required />
+          </div>
+          <div class="form-group">
+            <label>RFC</label>
+            <input type="text" id="c-rfc" placeholder="Ej. TCM080512AB3" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Segmento / Sector</label>
+            <input type="text" id="c-segment" placeholder="Ej. Manufactura / Automotriz" required />
+          </div>
+          <div class="form-group">
+            <label>Tipo de Cliente</label>
+            <select id="c-type" class="form-control" required>
+              <option value="B2B Corporativo">B2B Corporativo</option>
+              <option value="Distribuidor">Distribuidor</option>
+              <option value="Gobierno">Gobierno</option>
+              <option value="Pyme">Pyme</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contacto Principal</label>
+            <input type="text" id="c-contact" placeholder="Ej. Ing. Carlos Mendoza" required />
+          </div>
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="c-email" placeholder="carlos@techcorp.mx" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Línea de Crédito ($)</label>
+          <input type="text" id="c-credit" placeholder="Ej. $150,000 MXN" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeClientModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>CARTERA DE CLIENTES (B2B)</h2>
+      <p class="section-desc">
+        Directorio y perfiles de clientes industriales con asignación de crédito
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openClientModal()">
+      <i class="fa-solid fa-user-plus"></i> NUEVO CLIENTE
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>CLIENTE / RAZÓN SOCIAL</th>
+          <th>RFC</th>
+          <th>SEGMENTO</th>
+          <th>TIPO</th>
+          <th>CONTACTO PRINCIPAL</th>
+          <th>CORREO</th>
+          <th>LÍNEA CRÉDITO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filas existentes de tu tabla -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 5: PROVEEDORES & EXT. -->
+<section id="view-proveedores" class="tab-view">
+
+  <!-- MODAL PARA NUEVO PROVEEDOR -->
+  <div id="supplier-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-field"></i> Registrar Nuevo Proveedor</h3>
+        <button type="button" class="btn-close" onclick="closeSupplierModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="supplier-form" onsubmit="addNewSupplier(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Razón Social / Proveedor</label>
+            <input type="text" id="s-name" placeholder="Ej. Industrial Suministros S.A." required />
+          </div>
+          <div class="form-group">
+            <label>RFC</label>
+            <input type="text" id="s-rfc" placeholder="Ej. ISU100415XYZ" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categoría / Insumo</label>
+            <input type="text" id="s-category" placeholder="Ej. Herramientas y EPP" required />
+          </div>
+          <div class="form-group">
+            <label>Contacto Principal</label>
+            <input type="text" id="s-contact" placeholder="Ej. Lic. Sofía Ramírez" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="s-email" placeholder="ventas@industrialsuministros.mx" required />
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" id="s-phone" placeholder="Ej. 81 5555 4321" required />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeSupplierModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Proveedor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>PROVEEDORES Y EXTERNOS</h2>
+      <p class="section-desc">
+        Directorio de proveedores y socios comerciales de la cadena de suministro
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openSupplierModal()">
+      <i class="fa-solid fa-truck-field"></i> NUEVO PROVEEDOR
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>PROVEEDOR</th>
+          <th>RFC</th>
+          <th>CATEGORÍA</th>
+          <th>CONTACTO</th>
+          <th>CORREO</th>
+          <th>TELÉFONO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filas de la tabla de proveedores -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 6: ESPECIALISTAS TÉCNICOS -->
+<section id="view-especialistas" class="tab-view">
+
+  <!-- MODAL PARA NUEVO ESPECIALISTA -->
+  <div id="expert-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-gear"></i> Registrar Nuevo Especialista</h3>
+        <button type="button" class="btn-close" onclick="closeExpertModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="expert-form" onsubmit="addNewExpert(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre Completo</label>
+            <input type="text" id="e-name" placeholder="Ej. Ing. Roberto Gómez" required />
+          </div>
+          <div class="form-group">
+            <label>Especialidad / Área</label>
+            <input type="text" id="e-specialty" placeholder="Ej. Calibración & Automatización" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nivel / Certificación</label>
+            <select id="e-level" class="form-control" required>
+              <option value="Sénior / Certificado">Sénior / Certificado</option>
+              <option value="Máster Tech">Máster Tech</option>
+              <option value="Consultor Externo">Consultor Externo</option>
+              <option value="Técnico Junior">Técnico Junior</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estatus</label>
+            <select id="e-status" class="form-control" required>
+              <option value="Disponible">Disponible</option>
+              <option value="En Campo">En Campo</option>
+              <option value="Capacitación">Capacitación</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="e-email" placeholder="roberto.gomez@quiar.com.mx" required />
+          </div>
+          <div class="form-group">
+            <label>Teléfono Directo</label>
+            <input type="text" id="e-phone" placeholder="Ej. 81 8888 9900" required />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeExpertModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Especialista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>ESPECIALISTAS TÉCNICOS</h2>
+      <p class="section-desc">
+        Catálogo de personal técnico especializado y consultores asignables
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openExpertModal()">
+      <i class="fa-solid fa-user-gear"></i> NUEVO ESPECIALISTA
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>NOMBRE COMPLETO</th>
+          <th>ESPECIALIDAD</th>
+          <th>NIVEL</th>
+          <th>ESTATUS</th>
+          <th>CORREO</th>
+          <th>TELÉFONO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filas de la tabla de especialistas -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 7: SECTORES INDUSTRIALES -->
+<section id="view-sectores" class="tab-view">
+
+  <!-- MODAL PARA NUEVO SECTOR -->
+  <div id="sector-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-industry"></i> Registrar Nuevo Sector Industrial</h3>
+        <button type="button" class="btn-close" onclick="closeSectorModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="sector-form" onsubmit="addNewSector(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre del Sector</label>
+            <input type="text" id="sec-name" placeholder="Ej. Automotriz & Autopartes" required />
+          </div>
+          <div class="form-group">
+            <label>Clave / Código</label>
+            <input type="text" id="sec-code" placeholder="Ej. SEC-AUT" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descripción General</label>
+          <input type="text" id="sec-desc" placeholder="Ej. Proveeduría de equipos y componentes para líneas de producción" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Líder / Responsable</label>
+            <input type="text" id="sec-lead" placeholder="Ej. Ing. Mario Morales" required />
+          </div>
+          <div class="form-group">
+            <label>Estatus</label>
+            <select id="sec-status" class="form-control" required>
+              <option value="Activo">Activo</option>
+              <option value="En Desarrollo">En Desarrollo</option>
+              <option value="Pausado">Pausado</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeSectorModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Sector</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>SECTORES INDUSTRIALES</h2>
+      <p class="section-desc">
+        Clasificación de mercados y sectores de atención comercial B2B
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openSectorModal()">
+      <i class="fa-solid fa-industry"></i> NUEVO SECTOR
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>CLAVE</th>
+          <th>SECTOR INDUSTRIAL</th>
+          <th>DESCRIPCIÓN</th>
+          <th>LÍDER ASIGNADO</th>
+          <th>ESTATUS</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filas de la tabla de sectores -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 8: SERVICIOS ESPECIALIZADOS -->
+<section id="view-servicios" class="tab-view">
+
+  <!-- MODAL PARA NUEVO SERVICIO -->
+  <div id="service-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-screwdriver-wrench"></i> Registrar Nuevo Servicio</h3>
+        <button type="button" class="btn-close" onclick="closeServiceModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="service-form" onsubmit="addNewService(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código / Folio Servicio</label>
+            <input type="text" id="srv-code" placeholder="Ej. SRV-2026-001" required />
+          </div>
+          <div class="form-group">
+            <label>Nombre del Servicio</label>
+            <input type="text" id="srv-name" placeholder="Ej. Calibración Multímetros Fluke" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente Asignado</label>
+            <input type="text" id="srv-client" placeholder="Ej. TechCorp México S.A. de C.V." required />
+          </div>
+          <div class="form-group">
+            <label>Especialista a Cargo</label>
+            <input type="text" id="srv-expert" placeholder="Ej. Ing. Roberto Gómez" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Costo del Servicio ($)</label>
+            <input type="text" id="srv-cost" placeholder="Ej. $18,500 MXN" required />
+          </div>
+          <div class="form-group">
+            <label>Estatus</label>
+            <select id="srv-status" class="form-control" required>
+              <option value="Programado">Programado</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Completado">Completado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeServiceModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Servicio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>SERVICIOS ESPECIALIZADOS</h2>
+      <p class="section-desc">
+        Mantenimiento, calibración y soporte técnico industrial
+      </p>
+    </div>
+    <button class="btn btn-gold" onclick="openServiceModal()">
+      <i class="fa-solid fa-screwdriver-wrench"></i> NUEVO SERVICIO
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>SERVICIO</th>
+          <th>CLIENTE</th>
+          <th>ESPECIALISTA</th>
+          <th>COSTO</th>
+          <th>ESTATUS</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filas de la tabla de servicios -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+          <!-- SECCIÓN 9: CONTROL DE ACCESO, ROLES Y USUARIOS (RBAC) -->
+<section id="view-roles" class="tab-view">
+
+  <!-- MODAL PARA NUEVO USUARIO -->
+  <div id="user-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus"></i> Registrar Nuevo Usuario</h3>
+        <button type="button" class="btn-close" onclick="closeUserModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="user-form" onsubmit="addNewUser(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre Completo</label>
+            <input type="text" id="u-name" placeholder="Ej. Lic. Ana Paula Martínez" required />
+          </div>
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="u-email" placeholder="ana.martinez@quiar.com.mx" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rol Asignado</label>
+            <select id="u-role" class="form-control" required>
+              <option value="Administrador General">Administrador General</option>
+              <option value="Ventas">Ventas</option>
+              <option value="Almacén">Almacén</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="u-status" class="form-control" required>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PARA NUEVO ROL -->
+  <div id="role-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-shield-cat"></i> Registrar Nuevo Rol</h3>
+        <button type="button" class="btn-close" onclick="closeRoleModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="role-form" onsubmit="addNewRole(event)">
+        <div class="form-group">
+          <label>Nombre del Rol</label>
+          <input type="text" id="r-name" placeholder="Ej. Soporte Técnico" required />
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="r-desc" placeholder="Ej. Atención y seguimiento de incidencias técnicas" required />
+        </div>
+        <div class="form-group">
+          <label>Permisos Configurados (Módulo : Acción)</label>
+          <input type="text" id="r-perms" placeholder="Ej. Servicios : Crear, Leer, Editar" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeRoleModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar Rol</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <div>
+      <h2>GESTIÓN DE ROLES, PERMISOS Y USUARIOS</h2>
+      <p class="section-desc">
+        Matriz de permisos (Módulo / Acción) y administración de usuarios corporativos
+      </p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-outline" onclick="openUserModal()">
+        <i class="fa-solid fa-user-plus"></i> NUEVO USUARIO
+      </button>
+      <button class="btn btn-gold" onclick="openRoleModal()">
+        <i class="fa-solid fa-shield-cat"></i> NUEVO ROL
+      </button>
+    </div>
+  </div>
+
+  <!-- TABLA 1: MATRIZ DE ROLES Y PERMISOS -->
+  <div class="table-container mb-4">
+    <h3 class="table-title"><i class="fa-solid fa-user-shield"></i> Roles y Permisos Asignados</h3>
+    <table class="data-table" id="table-roles">
+      <thead>
+        <tr>
+          <th>ROL (nombreRol)</th>
+          <th>DESCRIPCIÓN (descripcion)</th>
+          <th>PERMISOS CONFIGURADOS (Módulo : Acción)</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Administrador General</strong></td>
+          <td>Control total del sistema y gestión de costos de adquisición</td>
+          <td>
+            <span class="badge badge-navy">Todos los Módulos : CRUD Total</span>
+            <span class="badge badge-gold">Inventario : Ver Precio Compra</span>
+          </td>
+          <td><button class="btn-icon"><i class="fa-solid fa-gear"></i></button></td>
+        </tr>
+        <tr>
+          <td><strong>Ventas</strong></td>
+          <td>Gestión de clientes y emisión de cotizaciones comercializadora</td>
+          <td>
+            <span class="badge badge-navy">Clientes : Crear, Leer, Editar</span>
+            <span class="badge badge-navy">Cotizaciones : Crear, Leer, Editar</span>
+          </td>
+          <td><button class="btn-icon"><i class="fa-solid fa-gear"></i></button></td>
+        </tr>
+        <tr>
+          <td><strong>Almacén</strong></td>
+          <td>Control de existencias y registro de entradas/salidas en Kardex</td>
+          <td>
+            <span class="badge badge-navy">Inventario : Leer, Editar Stock</span>
+            <span class="badge badge-navy">Movimientos : Crear Entrada/Salida</span>
+          </td>
+          <td><button class="btn-icon"><i class="fa-solid fa-gear"></i></button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TABLA 2: DIRECTORIO DE USUARIOS DEL SISTEMA -->
+  <div class="table-container">
+    <h3 class="table-title"><i class="fa-solid fa-users"></i> Usuarios Activos en el Sistema</h3>
+    <table class="data-table" id="table-users">
+      <thead>
+        <tr>
+          <th>NOMBRE COMPLETO</th>
+          <th>CORREO ELECTRÓNICO</th>
+          <th>ROL ASIGNADO</th>
+          <th>ESTADO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Administrador General</strong></td>
+          <td>admin@quiar.com.mx</td>
+          <td>Administrador General</td>
+          <td><span class="badge badge-success">Activo</span></td>
+          <td><button class="btn-icon"><i class="fa-solid fa-user-pen"></i></button></td>
+        </tr>
+        <tr>
+          <td><strong>Lic. José Pablo Ochoa</strong></td>
+          <td>jp.ochoa@quiar.com.mx</td>
+          <td>Ventas</td>
+          <td><span class="badge badge-success">Activo</span></td>
+          <td><button class="btn-icon"><i class="fa-solid fa-user-pen"></i></button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+        </div>
+      </main>
+    </div>
+<!-- Script externo de administración -->
+    <script src="admin.js" defer></script>
+  </body>
+</html>
