@@ -559,3 +559,47 @@ h6 {
   overflow-y: auto;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
+
+.input-group-custom {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.input-group-custom:focus-within {
+  border-color: var(--navy-primary);
+  box-shadow: 0 0 0 0.2rem rgba(0, 43, 91, 0.15);
+}
+.input-group-custom .table-input {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  width: 100%;
+  padding: 5px;
+}
+.input-prefix {
+  padding: 0 8px;
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  border-right: 1px solid #ced4da;
+}
+.input-suffix {
+  padding: 0 8px;
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  border-left: 1px solid #ced4da;
+}
+
+/* Ocultar todas las pestañas por defecto */
+.tab-view {
+  display: none;
+}
+
+/* Mostrar únicamente la sección activa seleccionada */
+.tab-view.active {
+  display: block;
+}

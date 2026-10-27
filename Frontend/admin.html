@@ -24,7 +24,7 @@
       <div class="login-card">
         <div class="login-header">
           <img
-            src="QUIAR/imagenes/ISOTIPO QUIAR.png"
+            src="../imagenes/ISOTIPO QUIAR.png"
             alt="Logo QUIAR"
             class="login-logo"
           />
@@ -82,7 +82,7 @@
         <div class="sidebar-brand">
           <a href="index.html">
             <img
-              src="imagenes/ISOTIPO QUIAR PNG.png"
+              src="../imagenes/ISOTIPO QUIAR PNG.png"
               alt="QUIAR Isotipo"
               class="brand-logo"
             />
@@ -298,91 +298,180 @@
             </div>
           </section>
 
-          <!-- SECCIÓN 2: COTIZACIONES Y PEDIDOS -->
-<section id="view-cotizaciones" class="tab-view">
+<!-- SECCIÓN 2: COTIZACIONES Y PEDIDOS -->
+  <section id="view-cotizaciones" class="tab-view">
 
-  <!-- MODAL PARA NUEVA COTIZACIÓN -->
-  <div id="quote-modal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nueva Cotización / Pedido</h3>
-        <button type="button" class="btn-close" onclick="closeQuoteModal()"><i class="fa-solid fa-xmark"></i></button>
+    <!-- MODAL PARA NUEVA COTIZACIÓN / PEDIDO -->
+    <div id="quote-modal" class="modal-overlay hidden">
+      <div class="modal-card modal-large" style="max-width: 800px;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nueva Cotización y Detalle de Pedido</h3>
+          <button type="button" class="btn-close" onclick="closeQuoteModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <!-- OJO: Quitamos el onsubmit de aquí para que lo maneje admin.js de forma limpia -->
+        <form id="quote-form">
+          <!-- DATOS DE LA CABECERA (COTIZACION_PEDIDO) -->
+          <h4 style="margin-bottom: 10px; color: var(--navy-primary); border-bottom: 2px solid #eee; padding-bottom: 5px;">
+            1. Datos Generales del Pedido
+          </h4>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Folio</label>
+              <input type="text" id="q-folio" readonly style="background-color: #f1f3f5; cursor: not-allowed;" required />
+            </div>
+            <div class="form-group">
+              <label for="q-client">Cliente (Razón Social)</label>
+              <select id="q-client" class="form-control" required>
+                <option value="">Seleccione un cliente...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fecha de Emisión</label>
+              <input type="date" id="q-date" required />
+            </div>
+            <div class="form-group">
+              <label for="q-agent">Asesor / Vendedor</label>
+              <select id="q-agent" class="form-control" required>
+                <option value="">Seleccione un asesor...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Estatus</label>
+              <select id="q-status" class="form-control" required>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Aprobada">Aprobada</option>
+                <option value="Enviada">Enviada</option>
+                <option value="Rechazada">Rechazada</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- DETALLE DE PRODUCTOS (DETALLE_PEDIDO) -->
+          <h4 style="margin: 20px 0 10px 0; color: var(--navy-primary); border-bottom: 2px solid #eee; padding-bottom: 5px;">
+            2. Detalle de Productos (Líneas del Pedido)
+          </h4>
+          
+          <div class="table-container" style="margin-bottom: 15px;">
+            <table class="data-table" id="detalle-productos-table">
+              <thead>
+                <tr>
+                  <th>Código SKU (Producto)</th>
+                  <th>Cantidad</th>
+                  <th>P. Venta ($)</th>
+                  <th>Descuento (%)</th>
+                  <th>Subtotal Línea</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="detalle-tbody">
+                <tr>
+                  <td><input type="text" placeholder="Ej. FLK-87V" class="table-input input-sku" style="width:100%; padding:5px;" required /></td>
+                  <td><input type="number" value="1" min="1" class="table-input input-cantidad" style="width:100%; padding:5px;" required /></td>
+                  <td>
+                    <div class="input-group-custom">
+                      <span class="input-prefix">$</span>
+                      <input type="text" value="0.00" class="table-input input-precio" required />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="input-group-custom">
+                      <input type="number" value="0" min="0" max="100" class="table-input input-descuento" placeholder="0" />
+                      <span class="input-suffix">%</span>
+                    </div>
+                  </td>
+                  <td><input type="text" value="$0.00" class="table-input input-subtotal" style="width:100%; padding:5px;" readonly /></td>
+                  <td><button type="button" class="btn btn-outline" style="padding: 2px 8px; color: red;" onclick="eliminarFilaDetalle(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn btn-outline" onclick="agregarFilaDetalle()" style="margin-top: 10px; font-size: 12px;">
+              <i class="fa-solid fa-plus"></i> Agregar otra línea de producto
+            </button>
+          </div>
+
+          <!-- RESUMEN FINANCIERO -->
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div class="form-row" style="margin-bottom: 0;">
+              <div class="form-group">
+                <label>Subtotal ($)</label>
+                <input type="text" id="q-subtotal" placeholder="$0.00" readonly />
+              </div>
+              <div class="form-group">
+                <label>Descuento Total ($)</label>
+                <input type="text" id="q-descuento" placeholder="$0.00" readonly />
+              </div>
+              <div class="form-group">
+                <label>IVA 16% ($)</label>
+                <input type="text" id="q-iva" placeholder="$0.00" readonly />
+              </div>
+              <div class="form-group">
+                <label><strong>Monto Total ($)</strong></label>
+                <input type="text" id="q-total" placeholder="$0.00" readonly style="font-weight: bold; color: var(--gold-primary);" />
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" onclick="closeQuoteModal()">Cancelar</button>
+            <button type="submit" class="btn btn-gold">Guardar Cotización y Detalle</button>
+          </div>
+        </form>
       </div>
-      <form id="quote-form" onsubmit="addNewQuote(event)">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Folio de Cotización</label>
-            <input type="text" id="q-folio" placeholder="Ej. COT-2026-095" required />
-          </div>
-          <div class="form-group">
-            <label>Cliente (Razón Social)</label>
-            <input type="text" id="q-client" placeholder="TechCorp México S.A. de C.V." required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fecha de Emisión</label>
-            <input type="date" id="q-date" required />
-          </div>
-          <div class="form-group">
-            <label>Estatus Inicial</label>
-            <select id="q-status" class="form-control" required>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Aprobada">Aprobada</option>
-              <option value="Enviada">Enviada</option>
-              <option value="Rechazada">Rechazada</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Monto Total ($)</label>
-            <input type="text" id="q-total" placeholder="Ej. $45,800 MXN" required />
-          </div>
-          <div class="form-group">
-            <label>Asesor / Responsable</label>
-            <input type="text" id="q-agent" placeholder="Ej. Administrador General" required />
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" onclick="closeQuoteModal()">Cancelar</button>
-          <button type="submit" class="btn btn-gold">Guardar Cotización</button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <div class="page-title-bar">
-    <div>
-      <h2>COTIZACIONES Y PEDIDOS</h2>
-      <p class="section-desc">
-        Gestión y seguimiento de propuestas comerciales y órdenes de compra
-      </p>
+    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+      <div class="modal-card" style="max-width: 400px; text-align: center;">
+        <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+          <h3 style="color: var(--navy-primary);"><i class="fa-solid fa-circle-question" style="color: var(--gold-color, #d4af37);"></i> Confirmar Acción</h3>
+        </div>
+        <p style="margin: 20px 0; color: #555; font-size: 15px;">¿Estás seguro de que quieres guardar los cambios de esta cotización?</p>
+        <div class="modal-actions" style="justify-content: center; gap: 15px;">
+          <button type="button" class="btn btn-outline" onclick="closeConfirmModal()" style="min-width: 100px;">Cancelar</button>
+          <button type="button" class="btn btn-gold" onclick="ejecutarGuardadoFinal()" style="min-width: 100px;">Sí, Guardar</button>
+        </div>
+      </div>
     </div>
-    <button class="btn btn-gold" onclick="openQuoteModal()">
-      <i class="fa-solid fa-file-circle-plus"></i> NUEVA COTIZACIÓN
-    </button>
-  </div>
 
-  <div class="table-container">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>FOLIO</th>
-          <th>CLIENTE</th>
-          <th>FECHA</th>
-          <th>ESTATUS</th>
-          <th>MONTO TOTAL</th>
-          <th>ASESOR</th>
-          <th>ACCIONES</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Puedes dejar filas de ejemplo aquí si gustas -->
-      </tbody>
-    </table>
-  </div>
-</section>
+    <!-- TABLA PRINCIPAL DE COTIZACIONES -->
+    <div class="page-title-bar">
+      <div>
+        <h2>COTIZACIONES Y PEDIDOS</h2>
+        <p class="section-desc">
+          Gestión de propuestas comerciales con desglose relacional de cabecera y detalle
+        </p>
+      </div>
+      <button class="btn btn-gold" onclick="openQuoteModal()">
+        <i class="fa-solid fa-file-circle-plus"></i> NUEVA COTIZACIÓN
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>FOLIO</th>
+            <th>CLIENTE</th>
+            <th>FECHA</th>
+            <th>SUBTOTAL</th>
+            <th>IVA</th>
+            <th>TOTAL</th>
+            <th>ESTATUS</th>
+            <th>ASESOR</th>
+            <th>ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody id="cotizaciones-tbody">
+          <!-- Las filas se inyectan dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </section>
 
           <!-- SECCIÓN 3: INVENTARIO & KARDEX -->
 <section id="view-inventario" class="tab-view">
@@ -471,26 +560,28 @@
 
   <div class="table-container">
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>SKU</th>
-          <th>PRODUCTO</th>
-          <th>CATEGORÍA</th>
-          <th>MARCA</th>
-          <th>ORIGEN</th>
-          <th>STOCK</th>
-          <th>MÍN.</th>
-          <th>P. COMPRA (Admin)</th>
-          <th>P. VENTA</th>
-          <th>UBICACIÓN</th>
-          <th>ACCIONES</th>
-        </tr>
-      </thead>
-      <!-- TBODY VACÍO PARA INICIAR DESDE CERO -->
-      <tbody>
-      </tbody>
+        <thead>
+            <tr>
+                <th>SKU / CÓDIGO</th>
+                <th>NOMBRE</th>
+                <th>CATEGORÍA</th>
+                <th>MARCA</th>
+                <th>ORIGEN</th>
+                <th>STOCK</th>
+                <th>MÍN</th>
+                <th>P. COMPRA</th>
+                <th>P. VENTA</th>
+                <th>UBICACIÓN</th>
+                <th>ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="11" style="text-align: center; padding: 20px; color: #666;">No hay productos registrados.</td>
+            </tr>
+        </tbody>
     </table>
-  </div>
+</div>
 </section>
 
           <!-- SECCIÓN 4: CARTERA DE CLIENTES -->
@@ -499,57 +590,63 @@
   <!-- MODAL PARA NUEVO CLIENTE -->
   <div id="client-modal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-user-plus"></i> Registrar Nuevo Cliente</h3>
-        <button type="button" class="btn-close" onclick="closeClientModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form id="client-form" onsubmit="addNewClient(event)">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Razón Social / Empresa</label>
-            <input type="text" id="c-name" placeholder="Ej. TechCorp México S.A. de C.V." required />
-          </div>
-          <div class="form-group">
-            <label>RFC</label>
-            <input type="text" id="c-rfc" placeholder="Ej. TCM080512AB3" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Segmento / Sector</label>
-            <input type="text" id="c-segment" placeholder="Ej. Manufactura / Automotriz" required />
-          </div>
-          <div class="form-group">
-            <label>Tipo de Cliente</label>
-            <select id="c-type" class="form-control" required>
-              <option value="B2B Corporativo">B2B Corporativo</option>
-              <option value="Distribuidor">Distribuidor</option>
-              <option value="Gobierno">Gobierno</option>
-              <option value="Pyme">Pyme</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Contacto Principal</label>
-            <input type="text" id="c-contact" placeholder="Ej. Ing. Carlos Mendoza" required />
-          </div>
-          <div class="form-group">
-            <label>Correo Electrónico</label>
-            <input type="email" id="c-email" placeholder="carlos@techcorp.mx" required />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Línea de Crédito ($)</label>
-          <input type="text" id="c-credit" placeholder="Ej. $150,000 MXN" required />
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" onclick="closeClientModal()">Cancelar</button>
-          <button type="submit" class="btn btn-gold">Guardar Cliente</button>
-        </div>
-      </form>
+        <h3 style="margin-bottom: 1.2rem; color: var(--quiar-blue);">Registrar Nuevo Cliente</h3>
+        <form id="client-form" onsubmit="addNewClient(event)">
+            
+            <div class="form-group">
+                <label>Empresa / Razón Social:</label>
+                <input type="text" id="c-empresa" required />
+            </div>
+
+            <div class="form-group">
+                <label>Persona de Contacto:</label>
+                <input type="text" id="c-contacto" required />
+            </div>
+
+            <div class="form-group">
+                <label>Puesto:</label>
+                <input type="text" id="c-puesto" />
+            </div>
+
+            <div class="form-group">
+                <label>Teléfono:</label>
+                <input type="text" id="c-telefono" />
+            </div>
+
+            <div class="form-group">
+                <label>Correo Electrónico:</label>
+                <input type="email" id="c-correo" required />
+            </div>
+
+            <div class="form-group">
+                <label>Ciudad:</label>
+                <input type="text" id="c-ciudad" />
+            </div>
+
+            <div class="form-group">
+                <label>Tipo de Cliente:</label>
+                <select id="c-tipo">
+                    <option value="Corporativo">Corporativo</option>
+                    <option value="Pyme">Pyme</option>
+                    <option value="Gobierno">Gobierno</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Estado:</label>
+                <select id="c-estado">
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 1.5rem; justify-content: flex-end;">
+                <button type="button" class="btn" style="background: #e2e8f0; color: #1e293b;" onclick="closeClientModal()">Cancelar</button>
+                <button type="submit" class="btn btn-gold">Guardar Cliente</button>
+            </div>
+        </form>
     </div>
-  </div>
+</div>
 
   <div class="page-title-bar">
     <div>
@@ -565,23 +662,26 @@
 
   <div class="table-container">
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>CLIENTE / RAZÓN SOCIAL</th>
-          <th>RFC</th>
-          <th>SEGMENTO</th>
-          <th>TIPO</th>
-          <th>CONTACTO PRINCIPAL</th>
-          <th>CORREO</th>
-          <th>LÍNEA CRÉDITO</th>
-          <th>ACCIONES</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Filas existentes de tu tabla -->
-      </tbody>
+        <thead>
+            <tr>
+                <th>EMPRESA</th>
+                <th>CONTACTO</th>
+                <th>PUESTO</th>
+                <th>TELÉFONO</th>
+                <th>CORREO</th>
+                <th>CIUDAD</th>
+                <th>TIPO</th>
+                <th>ESTADO</th>
+                <th>ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody id="view-clientes-tbody">
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 20px; color: #666;">No hay clientes registrados.</td>
+            </tr>
+        </tbody>
     </table>
-  </div>
+</div>
 </section>
 
           <!-- SECCIÓN 5: PROVEEDORES & EXT. -->
