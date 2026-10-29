@@ -54,11 +54,11 @@
 
         <div class="hero-stats">
           <div class="stat-item">
-            <span class="stat-num">7+</span>
+            <span class="stat-num" data-count="7" aria-label="7 o más">7+</span>
             <span class="stat-text">Sectores Atendidos</span>
           </div>
           <div class="stat-item">
-            <span class="stat-num">16+</span>
+            <span class="stat-num" data-count="16" aria-label="16 o más">16+</span>
             <span class="stat-text">Categorías de Productos</span>
           </div>
           <div class="stat-item">
@@ -160,7 +160,9 @@
         Atendemos a organizaciones que requieren proveedores capaces de responder de manera oportuna a sus necesidades de suministro.
       </p>
 
-      <div class="sectors-grid">
+      <div class="sectors-carousel" role="region" aria-roledescription="carrusel" aria-label="Sectores atendidos">
+      <div class="sectors-viewport">
+      <div class="sectors-grid" id="sectors-track">
         <div class="sector-card">
           <div class="sector-icon-wrapper"><i class="fa-solid fa-industry"></i></div>
           <h4>Manufactura</h4>
@@ -189,6 +191,8 @@
           <div class="sector-icon-wrapper"><i class="fa-solid fa-landmark"></i></div>
           <h4>Gobierno</h4>
         </div>
+      </div>
+      </div>
       </div>
     </div>
   </section>
@@ -281,15 +285,15 @@
       </div>
 
       <div class="contact-form-container">
-        <form class="contact-form" onsubmit="event.preventDefault();">
+        <form class="contact-form" id="contact-form">
           <div class="form-row">
             <div class="form-group">
               <label>EMPRESA</label>
-              <input type="text" placeholder="Nombre de la empresa" required>
+              <input type="text" name="empresa" placeholder="Nombre de la empresa" required>
             </div>
             <div class="form-group">
               <label>SECTOR</label>
-              <select required>
+              <select name="sector" required>
                 <option value="">Seleccionar...</option>
                 <option value="manufactura">Manufactura</option>
                 <option value="energia">Energía</option>
@@ -304,17 +308,17 @@
           <div class="form-row">
             <div class="form-group">
               <label>NOMBRE</label>
-              <input type="text" placeholder="Persona de contacto" required>
+              <input type="text" name="nombre" placeholder="Persona de contacto" required>
             </div>
             <div class="form-group">
               <label>CORREO</label>
-              <input type="email" placeholder="correo@empresa.com" required>
+              <input type="email" name="correo" placeholder="correo@empresa.com" required>
             </div>
           </div>
 
           <div class="form-group">
             <label>REQUERIMIENTO</label>
-            <textarea rows="4" placeholder="Describe los productos, materiales o servicios que requieres..."></textarea>
+            <textarea name="requerimiento" rows="4" placeholder="Describe los productos, materiales o servicios que requieres..."></textarea>
           </div>
 
           <button type="submit" class="btn btn-submit">ENVIAR SOLICITUD</button>
@@ -341,5 +345,6 @@
     </div>
   </footer>
 
+  <script src="index.js" defer></script>
 </body>
 </html>

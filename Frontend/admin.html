@@ -53,7 +53,19 @@
 
           <div class="form-group">
             <label><i class="fa-solid fa-key"></i> CONTRASEÑA</label>
-            <input type="password" value="••••••••••••" required />
+            <div class="login-password-field">
+              <input id="login-password" type="password" value="••••••••••••" required />
+              <button
+                type="button"
+                class="login-password-toggle"
+                aria-label="Mostrar contraseña"
+                aria-controls="login-password"
+                aria-pressed="false"
+                onclick="toggleLoginPassword(this)"
+              >
+                <i class="fa-solid fa-eye" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -1192,5 +1204,6 @@
     </div>
 <!-- Script externo de administración -->
     <script src="admin.js" defer></script>
+    <script src="catalogos.js" defer></script>
   </body>
 </html>

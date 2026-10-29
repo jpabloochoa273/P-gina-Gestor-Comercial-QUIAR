@@ -1,7 +1,30 @@
+const API_BASE = window.QUIAR_API_BASE || (location.port === '5000' ? location.origin : 'http://localhost:5000');
+function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
+async function apiFetch(url, options) {
+    let response;
+    try { response = await fetch(url, options); }
+    catch { throw new Error('No se pudo contactar al backend. Ejecuta npm start en Backend y revisa /api/health.'); }
+    if (!response.ok) {
+        const data = await response.clone().json().catch(() => ({}));
+        throw new Error(data.error || 'La solicitud fallo (' + response.status + ').');
+    }
+    return response;
+}
 // --- FUNCIONES NAVEGADOR Y LOGIN ---
 function showAdminApp() {
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("admin-app").classList.remove("hidden");
+}
+
+function toggleLoginPassword(button) {
+  const passwordInput = document.getElementById("login-password");
+  const showPassword = passwordInput.type === "password";
+  passwordInput.type = showPassword ? "text" : "password";
+  button.setAttribute("aria-pressed", String(showPassword));
+  button.setAttribute("aria-label", showPassword ? "Ocultar contraseña" : "Mostrar contraseña");
+  const icon = button.querySelector("i");
+  icon.classList.toggle("fa-eye", !showPassword);
+  icon.classList.toggle("fa-eye-slash", showPassword);
 }
 
 function switchTab(viewId, element) {
@@ -36,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   obtenerCotizaciones();
   cargarProductosDesdeBD();
+  cargarClientesDesdeBD();
 });
 
 // --- CONTROL DEL MODAL DE PRODUCTOS ---
@@ -53,51 +77,7 @@ function closeProductModal() {
   }
 }
 
-async function addNewProduct(event) {
-  event.preventDefault();
-  const sku = document.getElementById("p-sku").value;
-  const name = document.getElementById("p-name").value;
-  const category = document.getElementById("p-category").value;
-  const brand = document.getElementById("p-brand").value;
-  const stock = document.getElementById("p-stock").value;
-  const minStock = document.getElementById("p-min").value;
-  const buyPrice = document.getElementById("p-buy").value;
-  const sellPrice = document.getElementById("p-sell").value;
-  const origin = document.getElementById("p-origin").value;
-  const location = document.getElementById("p-location").value;
 
-  const productoData = {
-    codigoProducto: sku,
-    producto: name,
-    categoria: category,
-    marca: brand,
-    stock: parseInt(stock) || 0,
-    minStock: parseInt(minStock) || 0,
-    precioCompra: parseFloat(buyPrice) || 0,
-    precioVenta: parseFloat(sellPrice) || 0,
-    origen: origin,
-    ubicacion: location
-  };
-
-  try {
-    const response = await fetch('http://localhost:5000/api/productos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productoData)
-    });
-
-    if (response.ok) {
-      alert('¡Producto guardado en MySQL y Kardex actualizado!');
-      closeProductModal();
-      cargarProductosDesdeBD(); // Recarga la tabla con datos reales de la BD
-    } else {
-      const err = await response.json();
-      alert('Error al guardar: ' + (err.error || 'Desconocido'));
-    }
-  } catch (error) {
-    console.error('Error de red:', error);
-  }
-}
 
 // --- CONTROL DEL MODAL DE CLIENTES ---
 function openClientModal() {
@@ -114,55 +94,15 @@ function closeClientModal() {
   }
 }
 
-async function addNewClient(event) {
-    event.preventDefault(); // Evita que la página se recargue por defecto
 
-    // 1. Recolectar los datos de los inputs del modal de clientes
-    const nuevoCliente = {
-        empresa: document.getElementById('c-empresa').value,
-        contacto: document.getElementById('c-contacto').value,
-        puesto: document.getElementById('c-puesto').value,
-        telefono: document.getElementById('c-telefono').value,
-        correo: document.getElementById('c-correo').value,
-        ciudad: document.getElementById('c-ciudad').value,
-        tipoCliente: document.getElementById('c-tipo').value,
-        estado: document.getElementById('c-estado').value
-    };
-
-    try {
-        // 2. Enviar los datos al backend mediante POST
-        const response = await fetch('http://localhost:5000/api/clientes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(nuevoCliente)
-        });
-
-        if (!response.ok) throw new Error('No se pudo registrar el cliente en el servidor.');
-
-        // 3. Si se guarda con éxito: cerramos modal, limpiamos formulario y recargamos la tabla
-        closeClientModal(); // Asegúrate de que esta sea la función que cierra tu modal visualmente
-        document.getElementById('client-form').reset();
-        
-        // Volvemos a cargar la tabla para que aparezca el cliente nuevo al instante
-        cargarClientesDesdeBD();
-
-        console.log("Cliente registrado exitosamente");
-
-    } catch (error) {
-        console.error("Error al registrar cliente:", error);
-        alert("Ocurrió un error al guardar el cliente. Revisa la consola.");
-    }
-}
 
 // --- CONTROL DEL MODAL DE COTIZACIONES ---
-function openQuoteModal() {
+async function openQuoteModal() {
     const modal = document.getElementById('quote-modal');
     if (modal) modal.classList.remove('hidden');
 
     establecerFechaHoy();
-    cargarClientesYUsuarios(); // Carga automática de clientes y asesores desde la BD
+    await cargarClientesYUsuarios(); // Carga automática de clientes y asesores desde la BD
 
     const inputFolio = document.getElementById('q-folio');
     if (inputFolio && !cotizacionEdicionId) {
@@ -196,8 +136,6 @@ function closeConfirmModal() {
 
 // --- ENLACE DEL FORMULARIO Y APERTURA DEL MODAL DE CONFIRMACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
-    obtenerCotizaciones();
-
     const quoteForm = document.getElementById('quote-form');
     if (quoteForm) {
         quoteForm.addEventListener('submit', (event) => {
@@ -215,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dia = String(ahora.getDate()).padStart(2, '0');
             const hoyLocal = `${anio}-${mes}-${dia}`;
 
-            if (date < hoyLocal) {
+            if (!cotizacionEdicionId && date < hoyLocal) {
                 alert('No se puede guardar una cotización con una fecha anterior a hoy.');
                 document.getElementById("q-date").value = hoyLocal;
                 return; // Detiene el proceso si la fecha es inválida
@@ -254,12 +192,12 @@ async function ejecutarGuardadoFinal() {
 
     try {
         const url = cotizacionEdicionId 
-            ? `http://localhost:5000/api/cotizaciones/${cotizacionEdicionId}` 
-            : 'http://localhost:5000/api/cotizaciones';
+            ? `${API_BASE}/api/cotizaciones/${cotizacionEdicionId}` 
+            : `${API_BASE}/api/cotizaciones`;
             
         const metodo = cotizacionEdicionId ? 'PUT' : 'POST';
 
-        const respuesta = await fetch(url, {
+        const respuesta = await apiFetch(url, {
             method: metodo,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosCotizacionPendiente)
@@ -284,7 +222,7 @@ async function ejecutarGuardadoFinal() {
 // --- OBTENER COTIZACIONES DESDE EL BACKEND (CORREGIDO Y ALINEADO) ---
 async function obtenerCotizaciones() {
     try {
-        const respuesta = await fetch('http://localhost:5000/api/cotizaciones');
+        const respuesta = await apiFetch(`${API_BASE}/api/cotizaciones`);
         if (!respuesta.ok) throw new Error('Error al obtener cotizaciones');
 
         const cotizaciones = await respuesta.json();
@@ -299,7 +237,7 @@ async function obtenerCotizaciones() {
         tbody.innerHTML = cotizaciones.map(c => {
             const id = c.idPedido || c.id || c.id_cotizacion;
             const folio = c.folio || 'N/A';
-            const cliente = c.client || c.cliente || c.idCliente || 'Cliente General';
+            const cliente = c.nombreCliente || c.client || c.cliente || c.idCliente || 'Cliente General';
             const fecha = c.fecha ? c.fecha.split('T')[0] : 'N/A';
             
             // Formatear valores monetarios a 2 decimales
@@ -308,7 +246,7 @@ async function obtenerCotizaciones() {
             const total = Number(c.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
             const estado = c.estado || c.status || 'Pendiente';
-            const asesor = c.agent || c.asesor || c.idUsuario || 'Asesor';
+            const asesor = c.nombreVendedor || c.agent || c.asesor || c.idUsuario || 'Asesor';
 
             // 9 columnas perfectamente ordenadas con el data-id incluido
             return `
@@ -338,7 +276,7 @@ async function eliminarCotizacion(idPedido) {
     if (!confirm("¿Estás seguro de que deseas eliminar esta cotización de la base de datos?")) return;
 
     try {
-        const respuesta = await fetch(`http://localhost:5000/api/cotizaciones/${idPedido}`, {
+        const respuesta = await apiFetch(`${API_BASE}/api/cotizaciones/${idPedido}`, {
             method: 'DELETE'
         });
 
@@ -359,112 +297,29 @@ async function eliminarCotizacion(idPedido) {
 // --- CONTROL DE PROVEEDORES, ESPECIALISTAS, SECTORES, SERVICIOS, USUARIOS Y ROLES ---
 function openSupplierModal() { document.getElementById("supplier-modal")?.classList.remove("hidden"); }
 function closeSupplierModal() { document.getElementById("supplier-modal")?.classList.add("hidden"); document.getElementById("supplier-form")?.reset(); }
-function addNewSupplier(event) {
-  event.preventDefault();
-  const name = document.getElementById("s-name").value;
-  const rfc = document.getElementById("s-rfc").value;
-  const category = document.getElementById("s-category").value;
-  const contact = document.getElementById("s-contact").value;
-  const email = document.getElementById("s-email").value;
-  const phone = document.getElementById("s-phone").value;
-  const tableBody = document.querySelector("#view-proveedores tbody");
-  if (!tableBody) return;
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td><strong>${name}</strong></td><td><code>${rfc}</code></td><td>${category}</td><td>${contact}</td><td>${email}</td><td>${phone}</td><td><button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button></td>`;
-  tableBody.prepend(newRow);
-  closeSupplierModal();
-}
+
 
 function openExpertModal() { document.getElementById("expert-modal")?.classList.remove("hidden"); }
 function closeExpertModal() { document.getElementById("expert-modal")?.classList.add("hidden"); document.getElementById("expert-form")?.reset(); }
-function addNewExpert(event) {
-  event.preventDefault();
-  const name = document.getElementById("e-name").value;
-  const specialty = document.getElementById("e-specialty").value;
-  const level = document.getElementById("e-level").value;
-  const status = document.getElementById("e-status").value;
-  const email = document.getElementById("e-email").value;
-  const phone = document.getElementById("e-phone").value;
-  const tableBody = document.querySelector("#view-especialistas tbody");
-  if (!tableBody) return;
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td><strong>${name}</strong></td><td>${specialty}</td><td><span class="badge badge-blue">${level}</span></td><td><span class="badge badge-green">${status}</span></td><td>${email}</td><td>${phone}</td><td><button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button><button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button></td>`;
-  tableBody.prepend(newRow);
-  closeExpertModal();
-}
+
 
 function openSectorModal() { document.getElementById("sector-modal")?.classList.remove("hidden"); }
 function closeSectorModal() { document.getElementById("sector-modal")?.classList.add("hidden"); document.getElementById("sector-form")?.reset(); }
-function addNewSector(event) {
-  event.preventDefault();
-  const name = document.getElementById("sec-name").value;
-  const code = document.getElementById("sec-code").value;
-  const description = document.getElementById("sec-desc").value;
-  const lead = document.getElementById("sec-lead").value;
-  const status = document.getElementById("sec-status").value;
-  const tableBody = document.querySelector("#view-sectores tbody");
-  if (!tableBody) return;
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td><code>${code}</code></td><td><strong>${name}</strong></td><td>${description}</td><td>${lead}</td><td><span class="badge badge-green">${status}</span></td><td><button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button><button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button></td>`;
-  tableBody.prepend(newRow);
-  closeSectorModal();
-}
+
 
 function openServiceModal() { document.getElementById("service-modal")?.classList.remove("hidden"); }
 function closeServiceModal() { document.getElementById("service-modal")?.classList.add("hidden"); document.getElementById("service-form")?.reset(); }
-function addNewService(event) {
-  event.preventDefault();
-  const code = document.getElementById("srv-code").value;
-  const name = document.getElementById("srv-name").value;
-  const client = document.getElementById("srv-client").value;
-  const expert = document.getElementById("srv-expert").value;
-  const cost = document.getElementById("srv-cost").value;
-  const status = document.getElementById("srv-status").value;
-  const tableBody = document.querySelector("#view-servicios tbody");
-  if (!tableBody) return;
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td><code>${code}</code></td><td><strong>${name}</strong></td><td>${client}</td><td>${expert}</td><td><strong>${cost}</strong></td><td><span class="badge badge-blue">${status}</span></td><td><button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button><button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button></td>`;
-  tableBody.prepend(newRow);
-  closeServiceModal();
-}
+
 
 function openUserModal() { document.getElementById("user-modal")?.classList.remove("hidden"); }
 function closeUserModal() { document.getElementById("user-modal")?.classList.add("hidden"); document.getElementById("user-form")?.reset(); }
-function addNewUser(event) {
-  event.preventDefault();
-  const name = document.getElementById("u-name").value;
-  const email = document.getElementById("u-email").value;
-  const role = document.getElementById("u-role").value;
-  const status = document.getElementById("u-status").value;
-  const tableBody = document.querySelector("#table-users tbody");
-  if (!tableBody) return;
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td><strong>${name}</strong></td><td>${email}</td><td>${role}</td><td><span class="badge badge-success">${status}</span></td><td><button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button></td>`;
-  tableBody.prepend(newRow);
-  closeUserModal();
-}
+
 
 function openRoleModal() { document.getElementById("role-modal")?.classList.remove("hidden"); }
 function closeRoleModal() { document.getElementById("role-modal")?.classList.add("hidden"); document.getElementById("role-form")?.reset(); }
-function addNewRole(event) {
-  event.preventDefault();
-  const name = document.getElementById("r-name").value;
-  const desc = document.getElementById("r-desc").value;
-  const perms = document.getElementById("r-perms").value;
-  const tableBody = document.querySelector("#table-roles tbody");
-  if (!tableBody) return;
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td><strong>${name}</strong></td><td>${desc}</td><td><span class="badge badge-navy">${perms}</span></td><td><button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button><button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button></td>`;
-  tableBody.prepend(newRow);
-  closeRoleModal();
-}
 
-function deleteRow(button) {
-  const row = button.closest("tr");
-  if (row && confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-    row.remove();
-  }
-}
+
+
 
 // --- CONFIGURAR FECHA LOCAL DE HOY AL ABRIR ---
 function establecerFechaHoy() {
@@ -479,7 +334,7 @@ function establecerFechaHoy() {
     const hoyLocal = `${anio}-${mes}-${dia}`;
     
     // Asignar el mínimo permitido en el calendario del navegador
-    fechaInput.min = hoyLocal;
+    fechaInput.min = cotizacionEdicionId ? '' : hoyLocal;
     
     // Poner la fecha de hoy por defecto si está vacío
     if (!fechaInput.value) {
@@ -497,7 +352,7 @@ function validarFechaCotizacion() {
     const dia = String(ahora.getDate()).padStart(2, '0');
     const hoyLocal = `${anio}-${mes}-${dia}`;
 
-    if (fechaInput.value < hoyLocal) {
+    if (!cotizacionEdicionId && fechaInput.value < hoyLocal) {
         alert('No se pueden seleccionar fechas anteriores a hoy.');
         fechaInput.value = hoyLocal;
     }
@@ -616,7 +471,7 @@ document.addEventListener('input', function(e) {
         calcularTotalesCotizacion();
     }
 });// --- EDITAR COTIZACIÓN DESDE LA TABLA ---
-async function editRow(button) {
+async function editarCotizacion(button) {
     const fila = button.closest('tr');
     if (!fila) return;
 
@@ -628,10 +483,10 @@ async function editRow(button) {
     }
 
     cotizacionEdicionId = id;
-    openQuoteModal();
+    await openQuoteModal();
 
     try {
-        const respuesta = await fetch(`http://localhost:5000/api/cotizaciones/${id}`);
+        const respuesta = await apiFetch(`${API_BASE}/api/cotizaciones/${id}`);
         console.log("📡 Status de respuesta del backend:", respuesta.status);
         
         if (respuesta.ok) {
@@ -647,7 +502,7 @@ async function editRow(button) {
                 document.getElementById("q-status").value = data.pedido.estado || 'Pendiente';
             }
 
-            setTimeout(() => {
+            {
                 const selectClient = document.getElementById("q-client");
                 if (selectClient && data.pedido) {
                     selectClient.value = data.pedido.idCliente || data.pedido.id_cliente || '';
@@ -657,7 +512,7 @@ async function editRow(button) {
                 if (selectAgent && data.pedido) {
                     selectAgent.value = data.pedido.idUsuario || data.pedido.id_usuario || '';
                 }
-            }, 400);
+            }
 
             if (data.productos && data.productos.length > 0) {
                 renderizarDetallesEnTabla(data.productos);
@@ -709,7 +564,7 @@ function renderizarDetallesEnTabla(detalles) {
 
         return `
             <tr>
-                <td><input type="text" value="${sku}" class="table-input input-sku" style="width:100%; padding:5px;" required /></td>
+                <td><input type="text" value="${escapeHTML(sku)}" class="table-input input-sku" style="width:100%; padding:5px;" required /></td>
                 <td><input type="number" value="${cantidad}" min="1" class="table-input input-cantidad" style="width:100%; padding:5px;" required /></td>
                 <td>
                     <div class="input-group-custom">
@@ -781,7 +636,7 @@ function obtenerDetallesDesdeLaTabla() {
 async function cargarClientesYUsuarios() {
     try {
         // 1. Cargar Clientes desde el backend
-        const resClientes = await fetch('http://localhost:5000/api/clientes');
+        const resClientes = await apiFetch(`${API_BASE}/api/clientes`);
         if (resClientes.ok) {
             const clientes = await resClientes.json();
             const selectClient = document.getElementById('q-client');
@@ -789,14 +644,14 @@ async function cargarClientesYUsuarios() {
                 selectClient.innerHTML = '<option value="">Seleccione un cliente...</option>';
                 clientes.forEach(c => {
                     const id = c.idCliente || c.id_cliente || c.id;
-                    const nombre = c.nombre || c.name || c.razonSocial || c.cliente;
-                    selectClient.innerHTML += `<option value="${id}">${nombre}</option>`;
+                    const nombre = c.empresa || c.nombre || '';
+                    selectClient.add(new Option(nombre, id));
                 });
             }
         }
 
         // 2. Cargar Asesores / Usuarios desde el backend
-        const resUsuarios = await fetch('http://localhost:5000/api/usuarios');
+        const resUsuarios = await apiFetch(`${API_BASE}/api/usuarios`);
         if (resUsuarios.ok) {
             const usuarios = await resUsuarios.json();
             const selectAgent = document.getElementById('q-agent');
@@ -804,8 +659,8 @@ async function cargarClientesYUsuarios() {
                 selectAgent.innerHTML = '<option value="">Seleccione un asesor...</option>';
                 usuarios.forEach(u => {
                     const id = u.idUsuario || u.id_usuario || u.id;
-                    const nombre = u.nombre || u.name || u.correo;
-                    selectAgent.innerHTML += `<option value="${id}">${nombre}</option>`;
+                    const nombre = u.nombreCompleto || u.nombre || u.correo;
+                    selectAgent.add(new Option(nombre, id));
                 });
             }
         }
@@ -814,50 +669,9 @@ async function cargarClientesYUsuarios() {
     }
 }
 
-// 1. Función para enviar el formulario al backend
-async function guardarProducto(event) {
-    event.preventDefault(); // Evita que la página se recargue
-
-    const productoData = {
-        codigoProducto: document.getElementById('codigoProducto').value,
-        producto: document.getElementById('nombreProducto').value, // Asegúrate de que este ID coincida con tu HTML
-        categoria: document.getElementById('categoria').value,
-        marca: document.getElementById('marca').value,
-        stock: parseInt(document.getElementById('stockInicial').value) || 0,
-        minStock: parseInt(document.getElementById('stockMinimo').value) || 0,
-        precioCompra: parseFloat(document.getElementById('precioCompra').value) || 0,
-        precioVenta: parseFloat(document.getElementById('precioVenta').value) || 0,
-        origen: document.getElementById('origen').value,
-        ubicacion: document.getElementById('ubicacion').value
-    };
-
-    try {
-        const response = await fetch('http://localhost:5000/api/productos', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(productoData)
-        });
-
-        if (response.ok) {
-            alert('¡Producto guardado y Kardex actualizado con éxito!');
-            cargarProductosDesdeBD(); // Recarga la tabla con los datos reales de MySQL
-            // Si tienes una función para cerrar el modal, ponla aquí
-        } else {
-            const errorData = await response.json();
-            alert('Error al guardar: ' + (errorData.error || 'Desconocido'));
-        }
-    } catch (error) {
-        console.error('Error de red:', error);
-        alert('No se pudo conectar con el servidor backend.');
-    }
-}
-
-// 2. Función para cargar y mostrar los productos reales en la tabla de la página
 async function cargarProductosDesdeBD() {
   try {
-    const response = await fetch('http://localhost:5000/api/productos');
+    const response = await apiFetch(`${API_BASE}/api/productos`);
     if (!response.ok) throw new Error('Error al obtener productos');
 
     const productos = await response.json();
@@ -872,17 +686,17 @@ async function cargarProductosDesdeBD() {
 
     // Si sí hay productos, los dibujamos en la tabla
     tableBody.innerHTML = productos.map(p => `
-      <tr>
-        <td><code>${p.codigoProducto}</code></td>
-        <td><strong>${p.producto}</strong></td>
-        <td>${p.categoria}</td>
-        <td>${p.marca}</td>
-        <td>${p.origen}</td>
-        <td><strong>${p.stock}</strong></td>
-        <td>${p.minStock}</td>
-        <td><span class="text-secure">$${p.precioCompra}</span></td>
-        <td><strong>$${p.precioVenta}</strong></td>
-        <td>${p.ubicacion}</td>
+      <tr data-resource="productos" data-id="${escapeHTML(p.codigoProducto)}">
+        <td><code>${escapeHTML(p.codigoProducto)}</code></td>
+        <td><strong>${escapeHTML(p.producto)}</strong></td>
+        <td>${escapeHTML(p.categoria)}</td>
+        <td>${escapeHTML(p.marca)}</td>
+        <td>${escapeHTML(p.origen)}</td>
+        <td><strong>${escapeHTML(p.stock)}</strong></td>
+        <td>${escapeHTML(p.minStock)}</td>
+        <td><span class="text-secure">$${escapeHTML(p.precioCompra)}</span></td>
+        <td><strong>$${escapeHTML(p.precioVenta)}</strong></td>
+        <td>${escapeHTML(p.ubicacion)}</td>
         <td>
           <button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button>
           <button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button>
@@ -898,53 +712,10 @@ async function cargarProductosDesdeBD() {
   }
 }
 
-// Escuchar el envío del formulario del modal automáticamente
-document.addEventListener('DOMContentLoaded', () => {
-    const formProducto = document.querySelector('#formProducto') || document.querySelector('form'); 
-    if (formProducto) {
-        formProducto.addEventListener('submit', guardarProducto);
-    }
-    
-    // Cargar los productos al abrir la sección de inventario
-    cargarProductosDesdeBD();
-});
-async function cargarProductosDesdeBD() {
-  try {
-    const response = await fetch('http://localhost:5000/api/productos');
-    if (!response.ok) return;
-
-    const productos = await response.json();
-    const tableBody = document.querySelector("#view-inventario tbody");
-    if (!tableBody) return;
-
-    if (productos.length === 0) return;
-
-    tableBody.innerHTML = productos.map(p => `
-      <tr>
-        <td><code>${p.codigoProducto}</code></td>
-        <td><strong>${p.producto}</strong></td>
-        <td>${p.categoria}</td>
-        <td>${p.marca}</td>
-        <td>${p.origen}</td>
-        <td><strong>${p.stock}</strong></td>
-        <td>${p.minStock}</td>
-        <td><span class="text-secure">$${p.precioCompra}</span></td>
-        <td><strong>$${p.precioVenta}</strong></td>
-        <td>${p.ubicacion}</td>
-        <td>
-          <button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button>
-          <button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    console.error("Error al cargar productos desde la BD:", error);
-  }
-}
 // --- CARGAR CLIENTES DESDE LA BASE DE DATOS ---
 async function cargarClientesDesdeBD() {
     try {
-        const response = await fetch('http://localhost:5000/api/clientes');
+        const response = await apiFetch(`${API_BASE}/api/clientes`);
         if (!response.ok) throw new Error('Error al obtener clientes');
 
         const clientes = await response.json();
@@ -959,15 +730,15 @@ async function cargarClientesDesdeBD() {
 
         // Si sí hay clientes, los pintamos en la tabla con sus campos reales
         tbody.innerHTML = clientes.map(c => `
-            <tr>
-                <td><strong>${c.empresa || ''}</strong></td>
-                <td>${c.contacto || ''}</td>
-                <td>${c.puesto || ''}</td>
-                <td>${c.telefono || ''}</td>
-                <td>${c.correo || ''}</td>
-                <td>${c.ciudad || ''}</td>
-                <td><span class="badge badge-blue">${c.tipoCliente || ''}</span></td>
-                <td><span class="badge badge-success">${c.estado || 'Activo'}</span></td>
+            <tr data-resource="clientes" data-id="${c.idCliente}">
+                <td><strong>${escapeHTML(c.empresa)}</strong></td>
+                <td>${escapeHTML(c.contacto)}</td>
+                <td>${escapeHTML(c.puesto)}</td>
+                <td>${escapeHTML(c.telefono)}</td>
+                <td>${escapeHTML(c.correo)}</td>
+                <td>${escapeHTML(c.ciudad)}</td>
+                <td><span class="badge badge-blue">${escapeHTML(c.tipoCliente)}</span></td>
+                <td><span class="badge badge-success">${escapeHTML(c.estado || 'Activo')}</span></td>
                 <td>
                     <button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button>
                     <button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button>

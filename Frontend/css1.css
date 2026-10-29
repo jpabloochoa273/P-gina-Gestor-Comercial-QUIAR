@@ -390,11 +390,14 @@ a {
    * sectores que atienden
    * ======================== */
 .sectors-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
   gap: 16px;
-  margin-top: 40px;
 }
+
+.sectors-carousel { margin-top: 40px; }
+.sectors-viewport { overflow: hidden; padding: 8px 0 20px; }
+.sectors-grid .sector-card { flex: 0 0 calc((100% - 48px) / 4); }
+.stat-num[data-count] { font-variant-numeric: tabular-nums; }
 
 .sector-card {
   background: var(--bg-white);
@@ -633,15 +636,19 @@ a {
 @media (max-width: 1024px) {
   .hero-grid, .grid-2-cols { grid-template-columns: 1fr; }
   .products-grid { grid-template-columns: repeat(2, 1fr); }
-  .sectors-grid { grid-template-columns: repeat(3, 1fr); }
+  .sectors-grid .sector-card { flex-basis: calc((100% - 32px) / 3); }
   .services-grid-3 { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
   .nav-menu { display: none; }
   .hero-title { font-size: 2.2rem; }
-  .sectors-grid { grid-template-columns: repeat(2, 1fr); }
+  .sectors-grid .sector-card { flex-basis: calc((100% - 16px) / 2); }
   .products-grid { grid-template-columns: 1fr; }
   .footer-content { flex-direction: column; gap: 20px; }
   .form-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  .sectors-grid .sector-card { flex-basis: 100%; }
 }
