@@ -2,29 +2,33 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// Obtener roles
-router.get('/', (req, res) => {
-    db.query('SELECT * FROM rol', (err, results) => {
-        if (err) return res.status(500).json({ error: 'Error al obtener roles' });
-        res.json(results);
-    });
+// Obtener todos los roles
+router.get('/', async (req, res) => {
+    try {
+        const { rows } = await db.query('SELECT * FROM rol');
+        res.json(rows);
+    } catch (err) {
+        console.error('Error al obtener roles:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Obtener todos los permisos del sistema
-router.get('/permisos', (req, res) => {
-    db.query('SELECT * FROM permiso', (err, results) => {
-        if (err) return res.status(500).json({ error: 'Error al obtener permisos' });
-        res.json(results);
-    });
-});
-
-// Registrar nuevo rol
-router.post('/', (req, res) => {
+// Registrar un nuevo rol
+router.post('/', async (req, res) => {
     const { nombreRol, descripcion } = req.body;
-    db.query('INSERT INTO rol (nombreRol, descripcion) VALUES (?, ?)', [nombreRol, descripcion], (err, result) => {
-        if (err) return res.status(500).json({ error: 'Error al crear rol' });
-        res.status(201).json({ mensaje: 'Rol creado con éxito', idRol: result.insertId });
-    });
+    try {
+        const query = 'INSERT INTO rol ("nombreRol", descripcion) VALUES ($1, $2) RETURNING *;';
+        const result = await db.query(query, [nombreRol, descripcion]);
+        const nuevoRol = result.rows[0];
+        
+        res.status(201).json({ 
+            mensaje: 'Rol registrado con éxito', 
+            idRol: nuevoRol.idrol || nuevoRol.idRol || nuevoRol.id 
+        });
+    } catch (err) {
+        console.error('Error al registrar rol:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;

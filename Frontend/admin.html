@@ -700,50 +700,63 @@
 <section id="view-proveedores" class="tab-view">
 
   <!-- MODAL PARA NUEVO PROVEEDOR -->
-  <div id="supplier-modal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-truck-field"></i> Registrar Nuevo Proveedor</h3>
-        <button type="button" class="btn-close" onclick="closeSupplierModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form id="supplier-form" onsubmit="addNewSupplier(event)">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Razón Social / Proveedor</label>
-            <input type="text" id="s-name" placeholder="Ej. Industrial Suministros S.A." required />
-          </div>
-          <div class="form-group">
-            <label>RFC</label>
-            <input type="text" id="s-rfc" placeholder="Ej. ISU100415XYZ" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Categoría / Insumo</label>
-            <input type="text" id="s-category" placeholder="Ej. Herramientas y EPP" required />
-          </div>
-          <div class="form-group">
-            <label>Contacto Principal</label>
-            <input type="text" id="s-contact" placeholder="Ej. Lic. Sofía Ramírez" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Correo Electrónico</label>
-            <input type="email" id="s-email" placeholder="ventas@industrialsuministros.mx" required />
-          </div>
-          <div class="form-group">
-            <label>Teléfono</label>
-            <input type="text" id="s-phone" placeholder="Ej. 81 5555 4321" required />
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" onclick="closeSupplierModal()">Cancelar</button>
-          <button type="submit" class="btn btn-gold">Guardar Proveedor</button>
-        </div>
-      </form>
+<div id="supplier-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-truck-field"></i> Registrar Nuevo Proveedor</h3>
+      <button type="button" class="btn-close" onclick="closeSupplierModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    <form id="supplier-form" onsubmit="addNewSupplier(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Razón Social (nombreProveedor)</label>
+          <input type="text" id="s-name" placeholder="Ej. Industrial Suministros S.A." required />
+        </div>
+        <div class="form-group">
+          <label>RFC</label>
+          <input type="text" id="s-rfc" placeholder="Ej. ISU100415XYZ" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contacto</label>
+          <input type="text" id="s-contact" placeholder="Ej. Lic. Sofía Ramírez" required />
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="s-phone" placeholder="Ej. 81 5555 4321" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="s-email" placeholder="ventas@industrialsuministros.mx" required />
+        </div>
+        <div class="form-group">
+          <label>País de Origen (paisOrigen)</label>
+          <input type="text" id="s-pais" placeholder="Ej. México" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo de Proveedor (tipoProveedor)</label>
+          <input type="text" id="s-tipo" placeholder="Ej. Nacional / Internacional" required />
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="s-estado" class="form-control" required>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeSupplierModal()">Cancelar</button>
+        <button type="submit" class="btn btn-gold">Guardar Proveedor</button>
+      </div>
+    </form>
   </div>
+</div>
 
   <div class="page-title-bar">
     <div>
@@ -763,15 +776,17 @@
         <tr>
           <th>PROVEEDOR</th>
           <th>RFC</th>
-          <th>CATEGORÍA</th>
           <th>CONTACTO</th>
-          <th>CORREO</th>
           <th>TELÉFONO</th>
+          <th>CORREO</th>
+          <th>PAÍS ORIGEN</th>
+          <th>TIPO</th>
+          <th>ESTADO</th>
           <th>ACCIONES</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Filas de la tabla de proveedores -->
+      <tbody id="proveedores-tbody">
+        <!-- Las filas se inyectan dinámicamente -->
       </tbody>
     </table>
   </div>
@@ -860,7 +875,7 @@
           <th>ACCIONES</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="especialistas-tbody">
         <!-- Filas de la tabla de especialistas -->
       </tbody>
     </table>
@@ -938,8 +953,8 @@
           <th>ACCIONES</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Filas de la tabla de sectores -->
+      <tbody id="sectores-tbody">
+        <!-- Las filas se inyectan dinámicamente -->
       </tbody>
     </table>
   </div>
@@ -948,56 +963,61 @@
           <!-- SECCIÓN 8: SERVICIOS ESPECIALIZADOS -->
 <section id="view-servicios" class="tab-view">
 
-  <!-- MODAL PARA NUEVO SERVICIO -->
-  <div id="service-modal" class="modal-overlay hidden">
+  <!-- MODAL PARA NUEVO SERVICIO ESPECIALIZADO -->
+<div id="service-modal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-screwdriver-wrench"></i> Registrar Nuevo Servicio</h3>
-        <button type="button" class="btn-close" onclick="closeServiceModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form id="service-form" onsubmit="addNewService(event)">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Código / Folio Servicio</label>
-            <input type="text" id="srv-code" placeholder="Ej. SRV-2026-001" required />
-          </div>
-          <div class="form-group">
-            <label>Nombre del Servicio</label>
-            <input type="text" id="srv-name" placeholder="Ej. Calibración Multímetros Fluke" required />
-          </div>
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-screwdriver-wrench"></i> Registrar Nuevo Servicio</h3>
+            <button type="button" class="btn-close" onclick="closeServiceModal()"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Cliente Asignado</label>
-            <input type="text" id="srv-client" placeholder="Ej. TechCorp México S.A. de C.V." required />
-          </div>
-          <div class="form-group">
-            <label>Especialista a Cargo</label>
-            <input type="text" id="srv-expert" placeholder="Ej. Ing. Roberto Gómez" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Costo del Servicio ($)</label>
-            <input type="text" id="srv-cost" placeholder="Ej. $18,500 MXN" required />
-          </div>
-          <div class="form-group">
-            <label>Estatus</label>
-            <select id="srv-status" class="form-control" required>
-              <option value="Programado">Programado</option>
-              <option value="En Proceso">En Proceso</option>
-              <option value="Completado">Completado</option>
-              <option value="Cancelado">Cancelado</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" onclick="closeServiceModal()">Cancelar</button>
-          <button type="submit" class="btn btn-gold">Guardar Servicio</button>
-        </div>
-      </form>
+        <form id="service-form" onsubmit="addNewService(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código / Folio Servicio</label>
+                    <input type="text" id="srv-code" placeholder="Ej. SRV-2026-001" required />
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Servicio</label>
+                    <input type="text" id="srv-name" placeholder="Ej. Calibración Multímetros Fluke" required />
+                </div>
+            </div>
+            <div class="form-row">
+    <div class="form-group" style="width: 100%;">
+        <label>Descripción / Requerimiento</label>
+        <input type="text" id="srv-desc" placeholder="Ej. Mantenimiento preventivo de equipos" required />
     </div>
-  </div>
+</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Cliente Asignado</label>
+                    <input type="text" id="srv-client" placeholder="Ej. TechCorp México S.A. de C.V." required />
+                </div>
+                <div class="form-group">
+                    <label>Especialista a Cargo</label>
+                    <input type="text" id="srv-expert" placeholder="Ej. Ing. Roberto Gómez" required />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Costo del Servicio ($)</label>
+                    <input type="number" id="srv-cost" placeholder="0.00" required />
+                </div>
+                <div class="form-group">
+                    <label>Estatus</label>
+                    <select id="srv-status" class="form-control">
+                        <option value="Programado">Programado</option>
+                        <option value="En Proceso">En Proceso</option>
+                        <option value="Completado">Completado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeServiceModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar Servicio</button>
+            </div>
+        </form>
+    </div>
+</div>
 
   <div class="page-title-bar">
     <div>
@@ -1013,21 +1033,21 @@
 
   <div class="table-container">
     <table class="data-table">
-      <thead>
+    <thead>
         <tr>
-          <th>CÓDIGO</th>
-          <th>SERVICIO</th>
-          <th>CLIENTE</th>
-          <th>ESPECIALISTA</th>
-          <th>COSTO</th>
-          <th>ESTATUS</th>
-          <th>ACCIONES</th>
+            <th>CÓDIGO</th>
+            <th>SERVICIO</th>
+            <th>CLIENTE</th>
+            <th>ESPECIALISTA</th>
+            <th>COSTO</th>
+            <th>ESTATUS</th>
+            <th>ACCIONES</th>
         </tr>
-      </thead>
-      <tbody>
-        <!-- Filas de la tabla de servicios -->
-      </tbody>
-    </table>
+    </thead>
+    <tbody id="servicios-tbody">
+        <!-- Las filas se cargan dinámicamente aquí -->
+    </tbody>
+</table>
   </div>
 </section>
 
@@ -1170,32 +1190,18 @@
   <div class="table-container">
     <h3 class="table-title"><i class="fa-solid fa-users"></i> Usuarios Activos en el Sistema</h3>
     <table class="data-table" id="table-users">
-      <thead>
+    <thead>
         <tr>
-          <th>NOMBRE COMPLETO</th>
-          <th>CORREO ELECTRÓNICO</th>
-          <th>ROL ASIGNADO</th>
-          <th>ESTADO</th>
-          <th>ACCIONES</th>
+            <th>NOMBRE COMPLETO</th>
+            <th>CORREO ELECTRÓNICO</th>
+            <th>ROL ASIGNADO</th>
+            <th>ESTADO</th>
+            <th>ACCIONES</th>
         </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Administrador General</strong></td>
-          <td>admin@quiar.com.mx</td>
-          <td>Administrador General</td>
-          <td><span class="badge badge-success">Activo</span></td>
-          <td><button class="btn-icon"><i class="fa-solid fa-user-pen"></i></button></td>
-        </tr>
-        <tr>
-          <td><strong>Lic. José Pablo Ochoa</strong></td>
-          <td>jp.ochoa@quiar.com.mx</td>
-          <td>Ventas</td>
-          <td><span class="badge badge-success">Activo</span></td>
-          <td><button class="btn-icon"><i class="fa-solid fa-user-pen"></i></button></td>
-        </tr>
-      </tbody>
-    </table>
+    </thead>
+    <tbody id="usuarios-tbody">
+    </tbody>
+</table>
   </div>
 </section>
 
@@ -1204,6 +1210,5 @@
     </div>
 <!-- Script externo de administración -->
     <script src="admin.js" defer></script>
-    <script src="catalogos.js" defer></script>
   </body>
 </html>

@@ -6,17 +6,17 @@ const db = require('../db');
 router.get('/', async (req, res) => {
     try {
         const query = `
-            SELECT c.*, cl.empresa AS nombreCliente, u.nombreCompleto AS nombreVendedor
+            SELECT c.*, cl.empresa AS "nombreCliente", u."nombreCompleto" AS "nombreVendedor"
             FROM cotizacion_pedido c
-            LEFT JOIN cliente cl ON c.idCliente = cl.idCliente
-            LEFT JOIN usuario u ON c.idUsuario = u.idUsuario
+            LEFT JOIN cliente cl ON c."idCliente" = cl."idCliente"
+            LEFT JOIN usuario u ON c."idUsuario" = u."idUsuario"
             ORDER BY c.fecha DESC
         `;
-        const [results] = await db.query(query);
-        res.json(results);
+        const { rows } = await db.query(query);
+        res.json(rows);
     } catch (error) {
         console.error('Error al obtener cotizaciones:', error);
-        res.status(500).json({ error: 'Error al obtener cotizaciones' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -25,34 +25,34 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const queryPedido = `
-            SELECT c.*, cl.empresa AS nombreCliente, u.nombreCompleto AS nombreVendedor
+            SELECT c.*, cl.empresa AS "nombreCliente", u."nombreCompleto" AS "nombreVendedor"
             FROM cotizacion_pedido c
-            LEFT JOIN cliente cl ON c.idCliente = cl.idCliente
-            LEFT JOIN usuario u ON c.idUsuario = u.idUsuario
-            WHERE c.idPedido = ?
+            LEFT JOIN cliente cl ON c."idCliente" = cl."idCliente"
+            LEFT JOIN usuario u ON c."idUsuario" = u."idUsuario"
+            WHERE c."idPedido" = $1
         `;
 
         const queryDetalle = `
-            SELECT d.*, p.producto AS nombreProducto, p.marca
+            SELECT d.*, p.producto AS "nombreProducto", p.marca
             FROM detalle_pedido d
-            JOIN producto p ON d.codigoProducto = p.codigoProducto
-            WHERE d.idPedido = ?
+            JOIN producto p ON d."codigoProducto" = p."codigoProducto"
+            WHERE d."idPedido" = $1
         `;
 
-        const [pedidoResults] = await db.query(queryPedido, [id]);
-        if (pedidoResults.length === 0) {
+        const pedidoResult = await db.query(queryPedido, [id]);
+        if (pedidoResult.rows.length === 0) {
             return res.status(404).json({ error: 'Cotización no encontrada' });
         }
 
-        const [detalleResults] = await db.query(queryDetalle, [id]);
+        const detalleResult = await db.query(queryDetalle, [id]);
 
         res.json({
-            pedido: pedidoResults[0],
-            productos: detalleResults
+            pedido: pedidoResult.rows[0],
+            productos: detalleResult.rows
         });
     } catch (error) {
         console.error('Error al obtener detalle de la cotización:', error);
-        res.status(500).json({ error: 'Error al obtener detalle de la cotización' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -62,11 +62,12 @@ router.post('/', async (req, res) => {
         const { folio, client, date, status, total, subtotal, iva, agent, detalles } = req.body;
 
         const queryPedido = `
-            INSERT INTO cotizacion_pedido (idCliente, idUsuario, folio, fecha, subtotal, descuentoTotal, iva, total, estado)
-            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+            INSERT INTO cotizacion_pedido ("idCliente", "idUsuario", folio, fecha, subtotal, "descuentoTotal", iva, total, estado)
+            VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8)
+            RETURNING "idPedido";
         `;
 
-        const [resultPedido] = await db.query(queryPedido, [
+        const resultPedido = await db.query(queryPedido, [
             client || null,
             agent || null,
             folio || 'Sin Folio',
@@ -77,13 +78,13 @@ router.post('/', async (req, res) => {
             status || 'Pendiente'
         ]);
 
-        const idPedidoGenerado = resultPedido.insertId;
+        const idPedidoGenerado = resultPedido.rows[0].idpedido || resultPedido.rows[0].idPedido;
 
         if (detalles && Array.isArray(detalles) && detalles.length > 0) {
             for (const item of detalles) {
                 const queryDetalle = `
-                    INSERT INTO detalle_pedido (idPedido, codigoProducto, cantidad, precioVenta, descuento, subtotalLinea)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO detalle_pedido ("idPedido", "codigoProducto", cantidad, "precioVenta", descuento, "subtotalLinea")
+                    VALUES ($1, $2, $3, $4, $5, $6)
                 `;
                 await db.query(queryDetalle, [
                     idPedidoGenerado,
@@ -102,8 +103,8 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error al guardar cotización y detalle en MySQL:", error);
-        res.status(500).json({ error: 'Error al guardar la cotización en la base de datos' });
+        console.error("Error al guardar cotización y detalle en PostgreSQL:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -115,8 +116,8 @@ router.put('/:id', async (req, res) => {
 
         const queryPedido = `
             UPDATE cotizacion_pedido 
-            SET idCliente = ?, idUsuario = ?, folio = ?, fecha = ?, subtotal = ?, iva = ?, total = ?, estado = ?
-            WHERE idPedido = ?
+            SET "idCliente" = $1, "idUsuario" = $2, folio = $3, fecha = $4, subtotal = $5, iva = $6, total = $7, estado = $8
+            WHERE "idPedido" = $9
         `;
 
         await db.query(queryPedido, [
@@ -132,12 +133,12 @@ router.put('/:id', async (req, res) => {
         ]);
 
         // Limpiamos los detalles anteriores y reinsertamos los actualizados
-        await db.query('DELETE FROM detalle_pedido WHERE idPedido = ?', [id]);
+        await db.query('DELETE FROM detalle_pedido WHERE "idPedido" = $1', [id]);
 
         if (detalles && Array.isArray(detalles) && detalles.length > 0) {
             for (const item of detalles) {
                 await db.query(
-                    `INSERT INTO detalle_pedido (idPedido, codigoProducto, cantidad, precioVenta, descuento, subtotalLinea) VALUES (?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO detalle_pedido ("idPedido", "codigoProducto", cantidad, "precioVenta", descuento, "subtotalLinea") VALUES ($1, $2, $3, $4, $5, $6)`,
                     [id, item.sku || item.codigoProducto, item.cantidad || 1, item.precio || 0, item.descuento || 0, item.subtotal || 0]
                 );
             }
@@ -146,7 +147,7 @@ router.put('/:id', async (req, res) => {
         res.json({ message: 'Cotización actualizada correctamente' });
     } catch (error) {
         console.error("Error al actualizar cotización:", error);
-        res.status(500).json({ error: 'Error al actualizar la cotización' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -154,16 +155,16 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const [result] = await db.query('DELETE FROM cotizacion_pedido WHERE idPedido = ?', [id]);
+        const result = await db.query('DELETE FROM cotizacion_pedido WHERE "idPedido" = $1 RETURNING "idPedido"', [id]);
         
-        if (result.affectedRows === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Cotización no encontrada' });
         }
         
         res.json({ message: 'Cotización eliminada correctamente' });
     } catch (error) {
-        console.error("Error al eliminar en MySQL:", error);
-        res.status(500).json({ error: 'Error al eliminar la cotización' });
+        console.error("Error al eliminar en PostgreSQL:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 

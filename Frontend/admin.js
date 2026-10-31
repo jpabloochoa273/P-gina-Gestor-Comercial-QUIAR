@@ -35,7 +35,7 @@ function switchTab(viewId, element) {
   element.classList.add("active");
 }
 
-// --- BUSCADOR GLOBAL EN TIEMPO REAL ---
+// --- BUSCADOR GLOBAL Y CARGA INICIAL ---
 document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.querySelector(".topbar-search input");
 
@@ -57,9 +57,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   
+  // 🚀 TODAS LAS TABLAS SE CARGAN AQUí AUTOMÁTICAMENTE AL RECARGAR
   obtenerCotizaciones();
   cargarProductosDesdeBD();
   cargarClientesDesdeBD();
+  cargarSectoresDesdeBD();
+  cargarProveedoresDesdeBD();
+  cargarEspecialistasDesdeBD();
+  cargarServiciosDesdeBD();
+  cargarUsuariosDesdeBD();
 });
 
 // --- CONTROL DEL MODAL DE PRODUCTOS ---
@@ -751,5 +757,574 @@ async function cargarClientesDesdeBD() {
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c;">Error al conectar con el servidor.</td></tr>`;
         }
+    }
+}
+// --- REGISTRAR NUEVO CLIENTE (CAPTURA POR POSICIÓN EN MODAL) ---
+async function addNewClient(event) {
+    if (event) event.preventDefault();
+
+    const modal = document.getElementById('client-modal');
+    if (!modal) {
+        alert('No se encontró el modal de clientes.');
+        return;
+    }
+
+    // Capturamos todos los inputs y selects dentro del modal en el orden en que aparecen
+    const campos = modal.querySelectorAll('input, select');
+    
+    const clientData = {
+        empresa: campos[0]?.value || '',
+        contacto: campos[1]?.value || '',
+        puesto: campos[2]?.value || '',
+        telefono: campos[3]?.value || '',
+        correo: campos[4]?.value || '',
+        ciudad: campos[5]?.value || '',
+        tipoCliente: campos[6]?.value || 'Corporativo',
+        estado: campos[7]?.value || 'Activo'
+    };
+
+    console.log("📦 Datos que se enviarán al servidor:", clientData);
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/clientes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(clientData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Cliente registrado exitosamente en la base de datos!');
+            closeClientModal();     // Cierra el modal y limpia
+            cargarClientesDesdeBD(); // Recarga la tabla
+        } else {
+            alert('Error al registrar cliente: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al registrar cliente:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+// --- REGISTRAR NUEVO PRODUCTO (CAPTURA POR POSICIÓN EN MODAL) ---
+async function addNewProduct(event) {
+    if (event) event.preventDefault();
+
+    const limpiarPrecio = (valor) => {
+        if (!valor) return 0;
+        return parseFloat(String(valor).replace(/[^0-9.-]+/g, "")) || 0;
+    };
+
+    const productData = {
+        codigoProducto: document.getElementById('p-sku')?.value || '',
+        producto: document.getElementById('p-name')?.value || '',
+        categoria: document.getElementById('p-category')?.value || '',
+        marca: document.getElementById('p-brand')?.value || '',
+        stock: parseInt(document.getElementById('p-stock')?.value) || 0,
+        minStock: parseInt(document.getElementById('p-min')?.value) || 0,
+        precioCompra: limpiarPrecio(document.getElementById('p-buy')?.value),
+        precioVenta: limpiarPrecio(document.getElementById('p-sell')?.value),
+        origen: document.getElementById('p-origin')?.value || 'Nacional',
+        ubicacion: document.getElementById('p-location')?.value || ''
+    };
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/productos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Producto registrado exitosamente en la base de datos!');
+            closeProductModal();
+            cargarProductosDesdeBD();
+        } else {
+            alert('Error al registrar producto: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al registrar producto:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+// --- REGISTRAR NUEVO SECTOR INDUSTRIAL ---
+async function addNewSector(event) {
+    if (event) event.preventDefault();
+
+    const sectorData = {
+        nombreSector: document.getElementById('sec-name')?.value || '',
+        clave: document.getElementById('sec-code')?.value || '',
+        descripcion: document.getElementById('sec-desc')?.value || '',
+        lider: document.getElementById('sec-lead')?.value || '',
+        estado: document.getElementById('sec-status')?.value || 'Activo'
+    };
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/sectores`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sectorData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Sector industrial registrado exitosamente!');
+            closeSectorModal();     // Cierra el modal y limpia el formulario
+            // cargarSectoresDesdeBD(); // Descomenta si tienes tu función para recargar la tabla
+        } else {
+            alert('Error al registrar sector: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al registrar sector:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+// --- CARGAR SECTORES DESDE LA BD ---
+async function cargarSectoresDesdeBD() {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/sectores`);
+        const sectores = await respuesta.json();
+        
+        const tbody = document.getElementById('sectores-tbody');
+        if (!tbody) return;
+
+        if (!Array.isArray(sectores) || sectores.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #666;">No hay sectores registrados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        sectores.forEach(sec => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${sec.clave || 'SEC-001'}</td>
+                <td><strong>${sec.nombreSector || sec.nombre || ''}</strong></td>
+                <td>${sec.descripcion || 'Sin descripción'}</td>
+                <td>${sec.lider || 'No asignado'}</td>
+                <td><span class="badge badge-success">${sec.estado || 'Activo'}</span></td>
+                <td>
+                    <button class="btn-icon" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn-icon text-danger" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error al cargar sectores:", error);
+    }
+}
+
+// --- REGISTRAR NUEVO SECTOR INDUSTRIAL ---
+async function addNewSector(event) {
+    if (event) event.preventDefault();
+
+    const sectorData = {
+        nombreSector: document.getElementById('sec-name')?.value || '',
+        clave: document.getElementById('sec-code')?.value || '',
+        descripcion: document.getElementById('sec-desc')?.value || '',
+        lider: document.getElementById('sec-lead')?.value || '',
+        estado: document.getElementById('sec-status')?.value || 'Activo'
+    };
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/sectores`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sectorData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Sector industrial registrado exitosamente!');
+            closeSectorModal();      // Cierra el modal y limpia
+            cargarSectoresDesdeBD(); // Recarga la tabla automáticamente para que aparezca
+        } else {
+            alert('Error al registrar sector: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al registrar sector:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+// --- CARGAR PROVEEDORES DESDE LA BD ---
+async function cargarProveedoresDesdeBD() {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/proveedores`);
+        const proveedores = await respuesta.json();
+        
+        const tbody = document.getElementById('proveedores-tbody');
+        if (!tbody) return;
+
+        if (!Array.isArray(proveedores) || proveedores.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #666;">No hay proveedores registrados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        proveedores.forEach(prov => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${prov.nombreProveedor || prov.nombre || ''}</strong></td>
+                <td>${prov.rfc || ''}</td>
+                <td>${prov.categoria || ''}</td>
+                <td>${prov.contacto || ''}</td>
+                <td>${prov.correo || ''}</td>
+                <td>${prov.telefono || ''}</td>
+                <td>
+                    <button class="btn-icon" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn-icon text-danger" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error al cargar proveedores:", error);
+    }
+}
+
+async function addNewSupplier(event) {
+    if (event) event.preventDefault();
+    console.log("Ejecutando registro de proveedor..."); // Para probar en consola
+
+    const supplierData = {
+        nombreProveedor: document.getElementById('s-name')?.value || '',
+        rfc: document.getElementById('s-rfc')?.value || '',
+        contacto: document.getElementById('s-contact')?.value || '',
+        telefono: document.getElementById('s-phone')?.value || '',
+        correo: document.getElementById('s-email')?.value || '',
+        paisOrigen: document.getElementById('s-pais')?.value || '',
+        tipoProveedor: document.getElementById('s-tipo')?.value || '',
+        estado: document.getElementById('s-estado')?.value || 'Activo'
+    };
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/proveedores`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(supplierData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Proveedor registrado exitosamente!');
+            closeSupplierModal();      
+            cargarProveedoresDesdeBD(); 
+        } else {
+            alert('Error al registrar proveedor: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al registrar proveedor:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+// --- CARGAR PROVEEDORES DESDE LA BD ---
+async function cargarProveedoresDesdeBD() {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/proveedores`);
+        const proveedores = await respuesta.json();
+        
+        const tbody = document.getElementById('proveedores-tbody');
+        if (!tbody) return;
+
+        if (!Array.isArray(proveedores) || proveedores.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">No hay proveedores registrados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        proveedores.forEach(prov => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${prov.nombreproveedor || prov.nombreProveedor || ''}</strong></td>
+                <td>${prov.rfc || ''}</td>
+                <td>${prov.contacto || ''}</td>
+                <td>${prov.telefono || ''}</td>
+                <td>${prov.correo || ''}</td>
+                <td>${prov.paisorigen || prov.paisOrigen || ''}</td>
+                <td>${prov.tipoproveedor || prov.tipoProveedor || ''}</td>
+                <td><span class="badge badge-success">${prov.estado || 'Activo'}</span></td>
+                <td>
+                    <button class="btn-icon" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn-icon text-danger" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error al cargar proveedores:", error);
+    }
+}
+// --- REGISTRAR NUEVO ESPECIALISTA ---
+async function addNewExpert(event) {
+    if (event) event.preventDefault();
+
+    // Verificamos los IDs exactos de los inputs del modal
+    const specialistData = {
+        nombre: document.getElementById('esp-name')?.value || document.getElementById('nombre-especialista')?.value || '',
+        especialidad: document.getElementById('esp-area')?.value || document.getElementById('especialidad-especialista')?.value || '',
+        nivel: document.getElementById('esp-level')?.value || document.getElementById('nivel-especialista')?.value || '',
+        estado: document.getElementById('esp-status')?.value || document.getElementById('estado-especialista')?.value || 'Disponible',
+        correo: document.getElementById('esp-email')?.value || document.getElementById('correo-especialista')?.value || '',
+        telefono: document.getElementById('esp-phone')?.value || document.getElementById('telefono-especialista')?.value || ''
+    };
+
+    console.log("Datos a enviar al backend:", specialistData); // Para depurar
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/especialistas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(specialistData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Especialista registrado exitosamente!');
+            closeSpecialistModal(); 
+            if (typeof cargarEspecialistasDesdeBD === 'function') {
+                cargarEspecialistasDesdeBD(); 
+            }
+        } else {
+            alert('Error al registrar especialista: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error al registrar especialista:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+
+
+// --- CERRAR MODAL DE ESPECIALISTAS ---
+function closeSpecialistModal() {
+    const modal = document.getElementById('specialist-modal') || document.getElementById('modal-especialista');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    // Limpiar el formulario si existe
+    const form = document.getElementById('specialist-form') || document.querySelector('#specialist-modal form');
+    if (form) form.reset();
+}
+
+// --- REGISTRAR NUEVO ESPECIALISTA ---
+async function addNewExpert(event) {
+    if (event) event.preventDefault();
+
+    const specialistData = {
+        nombre: document.getElementById('e-name')?.value || '',
+        especialidad: document.getElementById('e-specialty')?.value || '',
+        nivel: document.getElementById('e-level')?.value || 'Sénior / Certificado',
+        estado: document.getElementById('e-status')?.value || document.getElementById('e-estado')?.value || 'Disponible',
+        correo: document.getElementById('e-email')?.value || document.getElementById('e-correo')?.value || '',
+        telefono: document.getElementById('e-phone')?.value || document.getElementById('e-telefono')?.value || ''
+    };
+
+    console.log("Datos listos para enviar:", specialistData);
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/especialistas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(specialistData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Especialista registrado exitosamente!');
+            closeExpertModal(); // Nota: tu botón usa closeExpertModal() según el HTML
+            if (typeof cargarEspecialistasDesdeBD === 'function') {
+                cargarEspecialistasDesdeBD(); 
+            }
+        } else {
+            alert('Error al registrar especialista: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error al registrar especialista:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+// --- CARGAR ESPECIALISTAS DESDE LA BD ---
+async function cargarEspecialistasDesdeBD() {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/especialistas`);
+        const especialistas = await respuesta.json();
+        
+        // AQUÍ VEREMOS LOS DATOS EXACTOS EN LA CONSOLA
+        console.log("Datos recibidos de especialistas:", especialistas);
+        
+        const tbody = document.getElementById('especialistas-tbody');
+        if (!tbody) return;
+
+        if (!Array.isArray(especialistas) || especialistas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #666;">No hay especialistas registrados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        especialistas.forEach(esp => {
+            // Buscamos en cualquier variante posible (minúsculas, mayúsculas, etc.)
+            const nombre = esp.nombre || esp.Nombre || esp.nombre_completo || '';
+            const especialidad = esp.especialidad || esp.Especialidad || '';
+            const nivel = esp.nivel || esp.Nivel || '';
+            const estado = esp.estado || esp.Estado || esp.estatus || 'Disponible';
+            const correo = esp.correo || esp.Correo || '';
+            const telefono = esp.telefono || esp.Telefono || '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${nombre}</strong></td>
+                <td>${especialidad}</td>
+                <td>${nivel}</td>
+                <td><span class="badge badge-success">${estado}</span></td>
+                <td>${correo}</td>
+                <td>${telefono}</td>
+                <td>
+                    <button class="btn-icon" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn-icon text-danger" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error al cargar especialistas:", error);
+    }
+}
+// --- REGISTRAR NUEVO SERVICIO ESPECIALIZADO ---
+async function addNewService(event) {
+    if (event) event.preventDefault();
+
+    const serviceData = {
+        codigo: document.getElementById('srv-code')?.value || '',
+        servicio: document.getElementById('srv-name')?.value || '',
+        cliente: document.getElementById('srv-client')?.value || '',
+        especialista: document.getElementById('srv-expert')?.value || '',
+        descripcionRequerimiento: document.getElementById('srv-desc')?.value || document.getElementById('srv-name')?.value || 'Sin descripción',
+        costo: document.getElementById('srv-cost')?.value || 0,
+        estado: document.getElementById('srv-status')?.value || 'Programado'
+    };
+
+    console.log("Datos de servicio a enviar:", serviceData);
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/servicios`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(serviceData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Servicio registrado exitosamente!');
+            closeServiceModal(); 
+            if (typeof cargarServiciosDesdeBD === 'function') {
+                cargarServiciosDesdeBD(); 
+            }
+        } else {
+            alert('Error al registrar servicio: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error al registrar servicio:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+async function cargarServiciosDesdeBD() {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/servicios`);
+        const servicios = await respuesta.json();
+        
+        const tbody = document.getElementById('servicios-tbody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = ''; // Limpiamos la tabla
+        
+        servicios.forEach(serv => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${serv.codigo || ''}</td>
+                <td>${serv.servicio || serv.descripcionRequerimiento || ''}</td>
+                <td>${serv.cliente || 'N/A'}</td>
+                <td>${serv.especialista || 'N/A'}</td>
+                <td>$${serv.costo || 0}</td>
+                <td><span class="badge">${serv.estado || 'Programado'}</span></td>
+                <td><!-- Acciones --></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error al cargar servicios:", error);
+    }
+}
+// --- REGISTRAR NUEVO USUARIO DESDE EL PANEL DE ADMINISTRACIÓN ---
+async function addNewUser(event) {
+    if (event) event.preventDefault();
+
+    const userData = {
+        nombreCompleto: document.getElementById('u-name')?.value || '',
+        correo: document.getElementById('u-email')?.value || '',
+        idRol: document.getElementById('u-role')?.value || '1',
+        estado: document.getElementById('u-status')?.value || 'Activo'
+    };
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/usuarios`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert('¡Usuario registrado exitosamente en la base de datos!');
+            closeUserModal();         
+            cargarUsuariosDesdeBD();   
+        } else {
+            alert('Error al registrar usuario: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al registrar usuario:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}
+
+// --- CARGAR USUARIOS DESDE LA BD PARA LA TABLA DE LA SECCIÓN ---
+async function cargarUsuariosDesdeBD() {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/usuarios`);
+        const usuarios = await respuesta.json();
+        
+        // Asegúrate de que tu tabla en la sección de Roles/Usuarios tenga un tbody con id="usuarios-tbody"
+        const tbody = document.getElementById('usuarios-tbody');
+        if (!tbody) return;
+
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #666;">No hay usuarios registrados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        usuarios.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHTML(u.nombreCompleto || '')}</strong></td>
+                <td>${escapeHTML(u.correo || '')}</td>
+                <td>${escapeHTML(u.nombreRol || 'Asignado')}</td>
+                <td><span class="badge badge-success">${escapeHTML(u.estado || 'Activo')}</span></td>
+                <td>
+                    <button class="btn-icon" title="Editar"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button>
+                    <button class="btn-icon text-danger" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error al cargar usuarios:", error);
     }
 }
