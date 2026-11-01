@@ -72,31 +72,38 @@ document.addEventListener("DOMContentLoaded", () => {
 function openProductModal() {
   const modal = document.getElementById("product-modal");
   if (modal) modal.classList.remove("hidden");
-}
-
-function closeProductModal() {
-  currentRowEditing = null;
-  const modal = document.getElementById("product-modal");
-  if (modal) {
-    modal.classList.add("hidden");
-    document.getElementById("product-form").reset();
+  
+  // Habilitamos el SKU para cuando se trate de CREAR un producto nuevo
+  const skuInput = document.getElementById("p-sku");
+  if (skuInput) {
+      skuInput.readOnly = false;
+      skuInput.style.opacity = "1";
+      skuInput.style.cursor = "text";
   }
 }
 
 
 
-// --- CONTROL DEL MODAL DE CLIENTES ---
-function openClientModal() {
-  const modal = document.getElementById("client-modal");
+// 2. Abrir modal para crear cliente nuevo (ID habilitado)
+function openClienteModal() {
+  const modal = document.getElementById("cliente-modal"); // Asegúrate de que el id del modal en tu HTML sea este
   if (modal) modal.classList.remove("hidden");
+  
+  const idInput = document.getElementById("c-id") || document.getElementById("c-sku");
+  if (idInput) {
+      idInput.readOnly = false;
+      idInput.style.opacity = "1";
+      idInput.style.cursor = "text";
+  }
 }
 
-function closeClientModal() {
-  currentRowEditing = null;
-  const modal = document.getElementById("client-modal");
+function closeClienteModal() {
+  clienteEdicionId = null;
+  const modal = document.getElementById("cliente-modal");
   if (modal) {
     modal.classList.add("hidden");
-    document.getElementById("client-form").reset();
+    const form = document.getElementById("cliente-form");
+    if (form) form.reset();
   }
 }
 
@@ -131,6 +138,7 @@ function closeQuoteModal() {
 // Variable temporal para almacenar los datos mientras el usuario confirma
 let cotizacionEdicionId = null;
 let datosCotizacionPendiente = null;
+let productoEdicionSku = null;
 
 
 // --- CONTROL DEL MODAL DE CONFIRMACIÓN ---
@@ -684,31 +692,38 @@ async function cargarProductosDesdeBD() {
     const tableBody = document.querySelector("#view-inventario tbody");
     if (!tableBody) return;
 
-    // Si no hay productos en la BD, mostramos el mensaje amigable
     if (!productos || productos.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 20px; color: #666;">No hay productos registrados.</td></tr>`;
       return;
     }
 
-    // Si sí hay productos, los dibujamos en la tabla
-    tableBody.innerHTML = productos.map(p => `
-      <tr data-resource="productos" data-id="${escapeHTML(p.codigoProducto)}">
-        <td><code>${escapeHTML(p.codigoProducto)}</code></td>
-        <td><strong>${escapeHTML(p.producto)}</strong></td>
-        <td>${escapeHTML(p.categoria)}</td>
-        <td>${escapeHTML(p.marca)}</td>
-        <td>${escapeHTML(p.origen)}</td>
-        <td><strong>${escapeHTML(p.stock)}</strong></td>
-        <td>${escapeHTML(p.minStock)}</td>
-        <td><span class="text-secure">$${escapeHTML(p.precioCompra)}</span></td>
-        <td><strong>$${escapeHTML(p.precioVenta)}</strong></td>
-        <td>${escapeHTML(p.ubicacion)}</td>
-        <td>
-          <button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button>
-          <button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button>
-        </td>
-      </tr>
-    `).join('');
+    tableBody.innerHTML = productos.map(p => {
+      const skuVal = p.codigoProducto || p.codigoproducto || p.sku || '';
+
+      return `
+        <tr data-resource="productos" data-id="${escapeHTML(skuVal)}">
+          <td><code>${escapeHTML(skuVal)}</code></td>
+          <td><strong>${escapeHTML(p.producto || p.nombre)}</strong></td>
+          <td>${escapeHTML(p.categoria)}</td>
+          <td>${escapeHTML(p.marca)}</td>
+          <td>${escapeHTML(p.origen)}</td>
+          <td><strong>${escapeHTML(p.stock)}</strong></td>
+          <td>${escapeHTML(p.minStock || p.min)}</td>
+          <td><span class="text-secure">$${escapeHTML(p.precioCompra || p.pCompra)}</span></td>
+          <td><strong>$${escapeHTML(p.precioVenta || p.pVenta)}</strong></td>
+          <td>${escapeHTML(p.ubicacion)}</td>
+          <td>
+              <button class="btn-icon" title="Editar" onclick="prepararEditarProducto('${skuVal}')">
+                  <i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i>
+              </button>
+              <!-- Botón de eliminar restaurado a color rojo -->
+              <button class="btn-icon text-danger" title="Eliminar" onclick="prepararEliminacionProducto('${skuVal}')">
+                  <i class="fa-solid fa-trash" style="color: #e74c3c;"></i>
+              </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   } catch (error) {
     console.error("Error al cargar productos desde la BD:", error);
     const tableBody = document.querySelector("#view-inventario tbody");
@@ -718,46 +733,56 @@ async function cargarProductosDesdeBD() {
   }
 }
 
-// --- CARGAR CLIENTES DESDE LA BASE DE DATOS ---
+// Variable global para controlar la edición de clientes
+let clienteEdicionId = null;
+let clienteIdAEliminar = null;
+
+// 1. Cargar clientes desde la BD a la tabla
 async function cargarClientesDesdeBD() {
-    try {
-        const response = await apiFetch(`${API_BASE}/api/clientes`);
-        if (!response.ok) throw new Error('Error al obtener clientes');
+  try {
+    const response = await apiFetch(`${API_BASE}/api/clientes`);
+    if (!response.ok) throw new Error('Error al obtener clientes');
 
-        const clientes = await response.json();
-        const tbody = document.querySelector("#view-clientes-tbody");
-        if (!tbody) return;
+    const clientes = await response.json();
+    const tableBody = document.querySelector("#view-clientes tbody");
+    if (!tableBody) return;
 
-        // Si la base de datos no regresa ningún cliente, mostramos el mensaje correcto
-        if (!clientes || clientes.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">No hay clientes registrados.</td></tr>`;
-            return;
-        }
-
-        // Si sí hay clientes, los pintamos en la tabla con sus campos reales
-        tbody.innerHTML = clientes.map(c => `
-            <tr data-resource="clientes" data-id="${c.idCliente}">
-                <td><strong>${escapeHTML(c.empresa)}</strong></td>
-                <td>${escapeHTML(c.contacto)}</td>
-                <td>${escapeHTML(c.puesto)}</td>
-                <td>${escapeHTML(c.telefono)}</td>
-                <td>${escapeHTML(c.correo)}</td>
-                <td>${escapeHTML(c.ciudad)}</td>
-                <td><span class="badge badge-blue">${escapeHTML(c.tipoCliente)}</span></td>
-                <td><span class="badge badge-success">${escapeHTML(c.estado || 'Activo')}</span></td>
-                <td>
-                    <button class="btn-icon" title="Editar" onclick="editRow(this)"><i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i></button>
-                    <button class="btn-icon" title="Eliminar" onclick="deleteRow(this)"><i class="fa-solid fa-trash" style="color: #e74c3c;"></i></button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (error) {
-        console.error("Error al cargar clientes:", error);
-        const tbody = document.querySelector("#view-clientes-tbody");
-        if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c;">Error al conectar con el servidor.</td></tr>`;
-        }
+    if (!clientes || clientes.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">No hay clientes registrados.</td></tr>`;
+      return;
     }
+
+    tableBody.innerHTML = clientes.map(c => {
+      const idCli = c.idCliente || c.idcliente || c.id || '';
+
+      return `
+        <tr data-resource="clientes" data-id="${escapeHTML(idCli)}">
+          <td><strong>${escapeHTML(c.empresa)}</strong></td>
+          <td>${escapeHTML(c.contacto)}</td>
+          <td>${escapeHTML(c.puesto)}</td>
+          <td>${escapeHTML(c.telefono)}</td>
+          <td>${escapeHTML(c.correo)}</td>
+          <td>${escapeHTML(c.ciudad)}</td>
+          <td>${escapeHTML(c.tipo)}</td>
+          <td><span class="badge-activo">${escapeHTML(c.estado || 'Activo')}</span></td>
+          <td>
+              <button class="btn-icon" title="Editar" onclick="prepararEditarCliente('${idCli}')">
+                  <i class="fa-solid fa-pen-to-square" style="color: var(--gold-color, #d4af37);"></i>
+              </button>
+              <button class="btn-icon text-danger" title="Eliminar" onclick="prepararEliminacionCliente('${idCli}')">
+                  <i class="fa-solid fa-trash" style="color: #e74c3c;"></i>
+              </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error("Error al cargar clientes desde la BD:", error);
+    const tableBody = document.querySelector("#view-clientes tbody");
+    if (tableBody) {
+      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #e74c3c;">Error al conectar con el servidor.</td></tr>`;
+    }
+  }
 }
 // --- REGISTRAR NUEVO CLIENTE (CAPTURA POR POSICIÓN EN MODAL) ---
 async function addNewClient(event) {
@@ -810,9 +835,10 @@ async function addNewClient(event) {
 async function addNewProduct(event) {
     if (event) event.preventDefault();
 
-    const limpiarPrecio = (valor) => {
+    const limpiarNumero = (valor) => {
         if (!valor) return 0;
-        return parseFloat(String(valor).replace(/[^0-9.-]+/g, "")) || 0;
+        const limpio = String(valor).replace(/[^0-9.-]+/g, "");
+        return parseFloat(limpio) || 0;
     };
 
     const productData = {
@@ -820,17 +846,28 @@ async function addNewProduct(event) {
         producto: document.getElementById('p-name')?.value || '',
         categoria: document.getElementById('p-category')?.value || '',
         marca: document.getElementById('p-brand')?.value || '',
-        stock: parseInt(document.getElementById('p-stock')?.value) || 0,
-        minStock: parseInt(document.getElementById('p-min')?.value) || 0,
-        precioCompra: limpiarPrecio(document.getElementById('p-buy')?.value),
-        precioVenta: limpiarPrecio(document.getElementById('p-sell')?.value),
+        stock: limpiarNumero(document.getElementById('p-stock')?.value),
+        minStock: limpiarNumero(document.getElementById('p-min')?.value),
+        precioCompra: limpiarNumero(document.getElementById('p-buy')?.value),
+        precioVenta: limpiarNumero(document.getElementById('p-sell')?.value),
         origen: document.getElementById('p-origin')?.value || 'Nacional',
         ubicacion: document.getElementById('p-location')?.value || ''
     };
 
+    // Si estamos editando, mostramos la interfaz visual de confirmación antes de guardar
+    if (productoEdicionSku) {
+        const confirmar = await mostrarModalConfirmacionEdicion();
+        if (!confirmar) return; // Si cancela, no hacemos nada
+    }
+
+    const url = productoEdicionSku 
+        ? `${API_BASE}/api/productos/${productoEdicionSku}` 
+        : `${API_BASE}/api/productos`;
+    const metodo = productoEdicionSku ? 'PUT' : 'POST';
+
     try {
-        const respuesta = await apiFetch(`${API_BASE}/api/productos`, {
-            method: 'POST',
+        const respuesta = await apiFetch(url, {
+            method: metodo,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(productData)
         });
@@ -838,16 +875,52 @@ async function addNewProduct(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Producto registrado exitosamente en la base de datos!');
+            alert(productoEdicionSku ? '¡Producto actualizado exitosamente!' : '¡Producto registrado exitosamente!');
             closeProductModal();
             cargarProductosDesdeBD();
         } else {
-            alert('Error al registrar producto: ' + (resultado.error || 'Verifica los datos'));
+            alert('Error al guardar producto: ' + (resultado.error || 'Verifica los datos'));
         }
     } catch (error) {
-        console.error("Error de red al registrar producto:", error);
+        console.error("Error de red al guardar producto:", error);
         alert('No se pudo conectar con el servidor backend.');
     }
+}
+
+// Función auxiliar que dibuja la mini interfaz de confirmación para editar
+function mostrarModalConfirmacionEdicion() {
+    return new Promise((resolve) => {
+        // Creamos un modal temporal de confirmación
+        let modalEdicionConfirm = document.createElement('div');
+        modalEdicionConfirm.id = 'modal-edit-confirm';
+        modalEdicionConfirm.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; 
+            justify-content: center; z-index: 10000;
+        `;
+        modalEdicionConfirm.innerHTML = `
+            <div style="background: #1a2234; padding: 25px; border-radius: 8px; width: 400px; text-align: center; color: #fff; border: 1px solid #d4af37;">
+                <i class="fa-solid fa-circle-question" style="font-size: 40px; color: #d4af37; margin-bottom: 15px;"></i>
+                <h3 style="margin-bottom: 10px;">¿Guardar cambios?</h3>
+                <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">¿Estás seguro de que deseas actualizar la información de este producto?</p>
+                <div style="display: flex; justify-content: space-around; gap: 10px;">
+                    <button id="btn-cancelar-edit" style="flex: 1; padding: 10px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                    <button id="btn-aceptar-edit" style="flex: 1; padding: 10px; background: #d4af37; color: #1a2234; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">Sí, Guardar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalEdicionConfirm);
+
+        document.getElementById('btn-cancelar-edit').onclick = () => {
+            modalEdicionConfirm.remove();
+            resolve(false); // Retorna falso si cancela
+        };
+
+        document.getElementById('btn-aceptar-edit').onclick = () => {
+            modalEdicionConfirm.remove();
+            resolve(true); // Retorna verdadero si acepta
+        };
+    });
 }
 // --- REGISTRAR NUEVO SECTOR INDUSTRIAL ---
 async function addNewSector(event) {
@@ -1327,4 +1400,320 @@ async function cargarUsuariosDesdeBD() {
     } catch (error) {
         console.error("Error al cargar usuarios:", error);
     }
+}
+// --- ELIMINAR PRODUCTO ---
+async function eliminarProducto(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto del inventario?')) return;
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/productos/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (respuesta.ok) {
+            alert('Producto eliminado correctamente.');
+            cargarProductosDesdeBD(); // Recarga la tabla
+        } else {
+            const data = await respuesta.json();
+            alert('Error al eliminar: ' + (data.error || 'Desconocido'));
+        }
+    } catch (error) {
+        console.error('Error de red al eliminar producto:', error);
+    }
+}
+
+// --- PREPARAR EDICIÓN DE PRODUCTO (Con SKU sellado) ---
+async function prepararEditarProducto(sku) {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/productos`);
+        const productos = await respuesta.json();
+        const producto = productos.find(p => (p.codigoProducto || p.codigoproducto || p.sku) === sku);
+
+        if (!producto) return alert('No se encontró el producto.');
+
+        // Guardamos el SKU en la variable global para saber que estamos editando
+        productoEdicionSku = sku;
+
+        // 1. Rellenamos el SKU y lo sellamos (readOnly) para que no se pueda modificar
+        const skuInput = document.getElementById('p-sku');
+        if (skuInput) {
+            skuInput.value = sku;
+            skuInput.readOnly = true; 
+            skuInput.style.opacity = "0.7";
+            skuInput.style.cursor = "not-allowed";
+        }
+
+        // 2. Rellenamos el resto de los campos editables
+        if (document.getElementById('p-name')) document.getElementById('p-name').value = producto.producto || producto.nombre || '';
+        if (document.getElementById('p-category')) document.getElementById('p-category').value = producto.categoria || '';
+        if (document.getElementById('p-brand')) document.getElementById('p-brand').value = producto.marca || '';
+        if (document.getElementById('p-stock')) document.getElementById('p-stock').value = producto.stock || 0;
+        if (document.getElementById('p-min')) document.getElementById('p-min').value = producto.minStock || producto.minstock || 0;
+        if (document.getElementById('p-buy')) document.getElementById('p-buy').value = producto.precioCompra || producto.preciocompra || 0;
+        if (document.getElementById('p-sell')) document.getElementById('p-sell').value = producto.precioVenta || producto.precioventa || 0;
+        if (document.getElementById('p-origin')) document.getElementById('p-origin').value = producto.origen || 'Nacional';
+        if (document.getElementById('p-location')) document.getElementById('p-location').value = producto.ubicacion || '';
+
+        // Abrimos el modal con todo listo
+        openProductModal();
+        
+        // Sobrescribimos el readOnly por si openProductModal lo blanqueaba
+        if (skuInput) {
+            skuInput.readOnly = true;
+            skuInput.style.opacity = "0.7";
+            skuInput.style.cursor = "not-allowed";
+        }
+    } catch (error) {
+        console.error('Error al preparar edición de producto:', error);
+        alert('Error al obtener la información del producto.');
+    }
+}
+// Variable temporal para guardar el producto que se quiere borrar
+let skuProductoAEliminar = null;
+
+// 1. Abre la interfaz visual de confirmación en lugar del alert del navegador
+function prepararEliminacionProducto(sku) {
+    skuProductoAEliminar = sku;
+
+    // Si ya tienes un modal de confirmación general en tu HTML, lo usamos; 
+    // si no, creamos uno temporal elegante de forma dinámica.
+    let modalConfirmacion = document.getElementById('modal-custom-confirm');
+    
+    if (!modalConfirmacion) {
+        modalConfirmacion = document.createElement('div');
+        modalConfirmacion.id = 'modal-custom-confirm';
+        modalConfirmacion.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; 
+            justify-content: center; z-index: 9999;
+        `;
+        modalConfirmacion.innerHTML = `
+            <div style="background: #1a2234; padding: 25px; border-radius: 8px; width: 400px; text-align: center; color: #fff; border: 1px solid #d4af37;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #e74c3c; margin-bottom: 15px;"></i>
+                <h3 style="margin-bottom: 10px;">¿Estás seguro?</h3>
+                <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Esta acción eliminará el producto y su historial en el Kardex de forma permanente.</p>
+                <div style="display: flex; justify-content: space-around; gap: 10px;">
+                    <button onclick="cerrarModalConfirmacion()" style="flex: 1; padding: 10px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                    <button onclick="ejecutarEliminacionProductoBD()" style="flex: 1; padding: 10px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Sí, Eliminar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalConfirmacion);
+    } else {
+        modalConfirmacion.style.display = 'flex';
+    }
+}
+
+// 2. Cierra la interfaz si se arrepiente
+function cerrarModalConfirmacion() {
+    const modalConfirmacion = document.getElementById('modal-custom-confirm');
+    if (modalConfirmacion) {
+        modalConfirmacion.style.display = 'none';
+    }
+    skuProductoAEliminar = null;
+}
+
+// 3. Ejecuta el borrado real en la base de datos al hacer clic en "Sí, Eliminar"
+async function ejecutarEliminacionProductoBD() {
+    if (!skuProductoAEliminar) return;
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/productos/${skuProductoAEliminar}`, {
+            method: 'DELETE'
+        });
+
+        if (respuesta.ok) {
+            alert('¡Producto eliminado correctamente!');
+            cerrarModalConfirmacion();
+            cargarProductosDesdeBD(); // Recarga la tabla de inventario
+        } else {
+            const data = await respuesta.json();
+            alert('Error al eliminar: ' + (data.error || 'Desconocido'));
+        }
+    } catch (error) {
+        console.error('Error de red al eliminar producto:', error);
+        alert('No se pudo conectar con el servidor.');
+    }
+}
+function closeProductModal() {
+  productoEdicionSku = null; // Limpia la memoria de edición
+  const modal = document.getElementById("product-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+    const form = document.getElementById("product-form");
+    if (form) form.reset();
+  }
+}// 3. Preparar edición (ID sellado / readOnly)
+async function prepararEditarCliente(id) {
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/clientes`);
+        const clientes = await respuesta.json();
+        const cliente = clientes.find(c => (c.idCliente || c.idcliente || c.id) === id);
+
+        if (!cliente) return alert('No se encontró el cliente.');
+
+        clienteEdicionId = id;
+
+        // ID sellado
+        const idInput = document.getElementById("c-id") || document.getElementById("c-sku");
+        if (idInput) {
+            idInput.value = id;
+            idInput.readOnly = true; 
+            idInput.style.opacity = "0.7";
+            idInput.style.cursor = "not-allowed";
+        }
+
+        // Rellenar campos
+        if (document.getElementById('c-empresa')) document.getElementById('c-empresa').value = cliente.empresa || '';
+        if (document.getElementById('c-contacto')) document.getElementById('c-contacto').value = cliente.contacto || '';
+        if (document.getElementById('c-puesto')) document.getElementById('c-puesto').value = cliente.puesto || '';
+        if (document.getElementById('c-telefono')) document.getElementById('c-telefono').value = cliente.telefono || '';
+        if (document.getElementById('c-correo')) document.getElementById('c-correo').value = cliente.correo || '';
+        if (document.getElementById('c-ciudad')) document.getElementById('c-ciudad').value = cliente.ciudad || '';
+        if (document.getElementById('c-tipo')) document.getElementById('c-tipo').value = cliente.tipo || 'Corporativo';
+        if (document.getElementById('c-estado')) document.getElementById('c-estado').value = cliente.estado || 'Activo';
+
+        openClienteModal();
+        
+        if (idInput) {
+            idInput.readOnly = true;
+            idInput.style.opacity = "0.7";
+            idInput.style.cursor = "not-allowed";
+        }
+    } catch (error) {
+        console.error('Error al preparar edición de cliente:', error);
+        alert('Error al obtener la información del cliente.');
+    }
+}
+// 4. Guardar / Actualizar cliente con confirmación visual si es edición
+async function guardarCliente(event) {
+    if (event) event.preventDefault();
+
+    const clienteData = {
+        idCliente: document.getElementById('c-id')?.value || document.getElementById('c-sku')?.value || '',
+        empresa: document.getElementById('c-empresa')?.value || '',
+        contacto: document.getElementById('c-contacto')?.value || '',
+        puesto: document.getElementById('c-puesto')?.value || '',
+        telefono: document.getElementById('c-telefono')?.value || '',
+        correo: document.getElementById('c-correo')?.value || '',
+        ciudad: document.getElementById('c-ciudad')?.value || '',
+        tipo: document.getElementById('c-tipo')?.value || 'Corporativo',
+        estado: document.getElementById('c-estado')?.value || 'Activo'
+    };
+
+    if (clienteEdicionId) {
+        const confirmar = await mostrarModalConfirmacionGenerica('¿Guardar cambios?', '¿Estás seguro de que deseas actualizar la información de este cliente?');
+        if (!confirmar) return;
+    }
+
+    const url = clienteEdicionId 
+        ? `${API_BASE}/api/clientes/${clienteEdicionId}` 
+        : `${API_BASE}/api/clientes`;
+    const metodo = clienteEdicionId ? 'PUT' : 'POST';
+
+    try {
+        const respuesta = await apiFetch(url, {
+            method: metodo,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(clienteData)
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok) {
+            alert(clienteEdicionId ? '¡Cliente actualizado exitosamente!' : '¡Cliente registrado exitosamente!');
+            closeClienteModal();
+            cargarClientesDesdeBD();
+        } else {
+            alert('Error al guardar cliente: ' + (resultado.error || 'Verifica los datos'));
+        }
+    } catch (error) {
+        console.error("Error de red al guardar cliente:", error);
+        alert('No se pudo conectar con el servidor backend.');
+    }
+}// 5. Preparar eliminación con interfaz visual
+function prepararEliminacionCliente(id) {
+    clienteIdAEliminar = id;
+    mostrarModalConfirmacionEliminarCliente();
+}
+
+function mostrarModalConfirmacionEliminarCliente() {
+    let modal = document.getElementById('modal-confirm-cliente-delete');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-confirm-cliente-delete';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; 
+            justify-content: center; z-index: 9999;
+        `;
+        modal.innerHTML = `
+            <div style="background: #1a2234; padding: 25px; border-radius: 8px; width: 400px; text-align: center; color: #fff; border: 1px solid #d4af37;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #e74c3c; margin-bottom: 15px;"></i>
+                <h3 style="margin-bottom: 10px;">¿Estás seguro?</h3>
+                <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Esta acción eliminará el cliente de forma permanente.</p>
+                <div style="display: flex; justify-content: space-around; gap: 10px;">
+                    <button id="btn-cancel-del-cli" style="flex: 1; padding: 10px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                    <button id="btn-ok-del-cli" style="flex: 1; padding: 10px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Sí, Eliminar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('btn-cancel-del-cli').onclick = () => modal.style.display = 'none';
+        document.getElementById('btn-ok-del-cli').onclick = async () => {
+            modal.style.display = 'none';
+            await ejecutarEliminacionClienteBD();
+        };
+    } else {
+        modal.style.display = 'flex';
+    }
+}
+
+async function ejecutarEliminacionClienteBD() {
+    if (!clienteIdAEliminar) return;
+
+    try {
+        const respuesta = await apiFetch(`${API_BASE}/api/clientes/${clienteIdAEliminar}`, {
+            method: 'DELETE'
+        });
+
+        if (respuesta.ok) {
+            alert('¡Cliente eliminado correctamente!');
+            cargarClientesDesdeBD();
+        } else {
+            const data = await respuesta.json();
+            alert('Error al eliminar: ' + (data.error || 'Desconocido'));
+        }
+    } catch (error) {
+        console.error('Error de red al eliminar cliente:', error);
+        alert('No se pudo conectar con el servidor.');
+    }
+}
+
+// Utilidad genérica para confirmación visual
+function mostrarModalConfirmacionGenerica(titulo, mensaje) {
+    return new Promise((resolve) => {
+        let modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; 
+            justify-content: center; z-index: 10000;
+        `;
+        modal.innerHTML = `
+            <div style="background: #1a2234; padding: 25px; border-radius: 8px; width: 400px; text-align: center; color: #fff; border: 1px solid #d4af37;">
+                <i class="fa-solid fa-circle-question" style="font-size: 40px; color: #d4af37; margin-bottom: 15px;"></i>
+                <h3 style="margin-bottom: 10px;">${titulo}</h3>
+                <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">${mensaje}</p>
+                <div style="display: flex; justify-content: space-around; gap: 10px;">
+                    <button id="btn-gen-cancel" style="flex: 1; padding: 10px; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                    <button id="btn-gen-ok" style="flex: 1; padding: 10px; background: #d4af37; color: #1a2234; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">Sí, Guardar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('btn-gen-cancel').onclick = () => { modal.remove(); resolve(false); };
+        document.getElementById('btn-gen-ok').onclick = () => { modal.remove(); resolve(true); };
+    });
 }
