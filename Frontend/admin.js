@@ -85,8 +85,8 @@ function openProductModal() {
 
 
 // 2. Abrir modal para crear cliente nuevo (ID habilitado)
-function openClienteModal() {
-  const modal = document.getElementById("cliente-modal"); // Asegúrate de que el id del modal en tu HTML sea este
+function openClientModal() {
+  const modal = document.getElementById("client-modal");
   if (modal) modal.classList.remove("hidden");
   
   const idInput = document.getElementById("c-id") || document.getElementById("c-sku");
@@ -97,12 +97,12 @@ function openClienteModal() {
   }
 }
 
-function closeClienteModal() {
+function closeClientModal() {
   clienteEdicionId = null;
-  const modal = document.getElementById("cliente-modal");
+  const modal = document.getElementById("client-modal");
   if (modal) {
     modal.classList.add("hidden");
-    const form = document.getElementById("cliente-form");
+    const form = document.getElementById("client-form");
     if (form) form.reset();
   }
 }
@@ -763,7 +763,7 @@ async function cargarClientesDesdeBD() {
           <td>${escapeHTML(c.telefono)}</td>
           <td>${escapeHTML(c.correo)}</td>
           <td>${escapeHTML(c.ciudad)}</td>
-          <td>${escapeHTML(c.tipo)}</td>
+          <td>${escapeHTML(c.tipo || c.Tipo || c.tipoCliente || c.tipocliente || 'Corporativo')}</td>
           <td><span class="badge-activo">${escapeHTML(c.estado || 'Activo')}</span></td>
           <td>
               <button class="btn-icon" title="Editar" onclick="prepararEditarCliente('${idCli}')">
@@ -787,47 +787,52 @@ async function cargarClientesDesdeBD() {
 // --- REGISTRAR NUEVO CLIENTE (CAPTURA POR POSICIÓN EN MODAL) ---
 async function addNewClient(event) {
     if (event) event.preventDefault();
+const selectTipo = document.getElementById('c-tipo') || document.getElementById('tipo') || document.getElementById('tipo-cliente');
+    const tipoValor = selectTipo ? selectTipo.value : 'Corporativo';
 
-    const modal = document.getElementById('client-modal');
-    if (!modal) {
-        alert('No se encontró el modal de clientes.');
-        return;
-    }
-
-    // Capturamos todos los inputs y selects dentro del modal en el orden en que aparecen
-    const campos = modal.querySelectorAll('input, select');
-    
-    const clientData = {
-        empresa: campos[0]?.value || '',
-        contacto: campos[1]?.value || '',
-        puesto: campos[2]?.value || '',
-        telefono: campos[3]?.value || '',
-        correo: campos[4]?.value || '',
-        ciudad: campos[5]?.value || '',
-        tipoCliente: campos[6]?.value || 'Corporativo',
-        estado: campos[7]?.value || 'Activo'
+    console.log("Elemento select encontrado:", selectTipo);
+    console.log("Valor capturado:", tipoValor);
+    const clienteData = {
+        idCliente: document.getElementById('c-id')?.value || document.getElementById('c-sku')?.value || '',
+        empresa: document.getElementById('c-empresa')?.value || '',
+        contacto: document.getElementById('c-contacto')?.value || '',
+        puesto: document.getElementById('c-puesto')?.value || '',
+        telefono: document.getElementById('c-telefono')?.value || '',
+        correo: document.getElementById('c-correo')?.value || '',
+        ciudad: document.getElementById('c-ciudad')?.value || '',
+        tipo: tipoValor,         // <--- Usamos la variable que capturó "Pyme"
+        tipoCliente: tipoValor,  // <--- Y cubrimos la otra opción para el backend
+        estado: document.getElementById('c-estado')?.value || 'Activo'
     };
 
-    console.log("📦 Datos que se enviarán al servidor:", clientData);
+    if (clienteEdicionId) {
+        const confirmar = await mostrarModalConfirmacionGenerica('¿Guardar cambios?', '¿Estás seguro de que deseas actualizar la información de este cliente?');
+        if (!confirmar) return;
+    }
+
+    const url = clienteEdicionId 
+        ? `${API_BASE}/api/clientes/${clienteEdicionId}` 
+        : `${API_BASE}/api/clientes`;
+    const metodo = clienteEdicionId ? 'PUT' : 'POST';
 
     try {
-        const respuesta = await apiFetch(`${API_BASE}/api/clientes`, {
-            method: 'POST',
+        const respuesta = await apiFetch(url, {
+            method: metodo,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(clientData)
+            body: JSON.stringify(clienteData)
         });
 
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Cliente registrado exitosamente en la base de datos!');
-            closeClientModal();     // Cierra el modal y limpia
-            cargarClientesDesdeBD(); // Recarga la tabla
+            alert(clienteEdicionId ? '¡Cliente actualizado exitosamente!' : '¡Cliente registrado exitosamente!');
+            closeClientModal();
+            cargarClientesDesdeBD();
         } else {
-            alert('Error al registrar cliente: ' + (resultado.error || 'Verifica los datos'));
+            alert('Error al guardar cliente: ' + (resultado.error || 'Verifica los datos'));
         }
     } catch (error) {
-        console.error("Error de red al registrar cliente:", error);
+        console.error("Error de red al guardar cliente:", error);
         alert('No se pudo conectar con el servidor backend.');
     }
 }
@@ -1585,53 +1590,8 @@ async function prepararEditarCliente(id) {
         alert('Error al obtener la información del cliente.');
     }
 }
-// 4. Guardar / Actualizar cliente con confirmación visual si es edición
-async function guardarCliente(event) {
-    if (event) event.preventDefault();
 
-    const clienteData = {
-        idCliente: document.getElementById('c-id')?.value || document.getElementById('c-sku')?.value || '',
-        empresa: document.getElementById('c-empresa')?.value || '',
-        contacto: document.getElementById('c-contacto')?.value || '',
-        puesto: document.getElementById('c-puesto')?.value || '',
-        telefono: document.getElementById('c-telefono')?.value || '',
-        correo: document.getElementById('c-correo')?.value || '',
-        ciudad: document.getElementById('c-ciudad')?.value || '',
-        tipo: document.getElementById('c-tipo')?.value || 'Corporativo',
-        estado: document.getElementById('c-estado')?.value || 'Activo'
-    };
-
-    if (clienteEdicionId) {
-        const confirmar = await mostrarModalConfirmacionGenerica('¿Guardar cambios?', '¿Estás seguro de que deseas actualizar la información de este cliente?');
-        if (!confirmar) return;
-    }
-
-    const url = clienteEdicionId 
-        ? `${API_BASE}/api/clientes/${clienteEdicionId}` 
-        : `${API_BASE}/api/clientes`;
-    const metodo = clienteEdicionId ? 'PUT' : 'POST';
-
-    try {
-        const respuesta = await apiFetch(url, {
-            method: metodo,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(clienteData)
-        });
-
-        const resultado = await respuesta.json();
-
-        if (respuesta.ok) {
-            alert(clienteEdicionId ? '¡Cliente actualizado exitosamente!' : '¡Cliente registrado exitosamente!');
-            closeClienteModal();
-            cargarClientesDesdeBD();
-        } else {
-            alert('Error al guardar cliente: ' + (resultado.error || 'Verifica los datos'));
-        }
-    } catch (error) {
-        console.error("Error de red al guardar cliente:", error);
-        alert('No se pudo conectar con el servidor backend.');
-    }
-}// 5. Preparar eliminación con interfaz visual
+// 5. Preparar eliminación con interfaz visual
 function prepararEliminacionCliente(id) {
     clienteIdAEliminar = id;
     mostrarModalConfirmacionEliminarCliente();

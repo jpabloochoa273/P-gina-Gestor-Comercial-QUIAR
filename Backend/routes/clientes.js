@@ -16,24 +16,19 @@ router.get('/', async (req, res) => {
 // Registrar un nuevo cliente
 router.post('/', async (req, res) => {
     try {
-        const { empresa, contacto, puesto, telefono, correo, ciudad, tipoCliente, estado } = req.body;
+        const { empresa, contacto, puesto, telefono, correo, ciudad, tipo, tipoCliente, estado } = req.body;
+        const valorTipo = tipo || tipoCliente || 'Corporativo';
         
-        // Usamos comillas dobles en las columnas que tienen mayúsculas en Supabase
         const query = `
             INSERT INTO cliente (empresa, contacto, puesto, telefono, correo, ciudad, "tipoCliente", estado) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *;
         `;
         
-        const values = [empresa, contacto, puesto, telefono, correo, ciudad, tipoCliente, estado || 'Activo'];
+        const values = [empresa, contacto, puesto, telefono, correo, ciudad, valorTipo, estado || 'Activo'];
         const result = await db.query(query, values);
         
-        const nuevoCliente = result.rows[0];
-        
-        res.status(201).json({ 
-            message: 'Cliente registrado exitosamente', 
-            idCliente: nuevoCliente.idcliente || nuevoCliente.idCliente || nuevoCliente.id
-        });
+        res.status(201).json({ message: 'Cliente registrado exitosamente', cliente: result.rows[0] });
     } catch (error) {
         console.error("Error al registrar cliente:", error);
         res.status(500).json({ error: error.message });
