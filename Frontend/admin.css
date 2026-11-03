@@ -635,3 +635,13 @@ h6 {
 .tab-view.active {
   display: block;
 }
+
+/* Acceso y registro */
+.login-overlay { overflow-y: auto; padding: 24px 16px; }
+.login-card { margin: auto; }
+.auth-tabs { display: flex; gap: 8px; margin: 20px 0; }
+.auth-tabs button { flex: 1; padding: 12px 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-light); color: var(--quiar-blue); font: inherit; cursor: pointer; }
+.auth-tabs button.active { background: var(--quiar-blue); color: white; }
+.auth-error { color: var(--danger); font-size: .85rem; margin-bottom: 16px; }
+.btn:disabled, .auth-tabs button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 480px) { .login-card { padding: 24px; } }

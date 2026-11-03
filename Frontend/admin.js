@@ -2,16 +2,28 @@ const API_BASE = window.QUIAR_API_BASE || (location.port === '5000' ? location.o
 function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
 async function apiFetch(url, options) {
     let response;
-    try { response = await fetch(url, options); }
+    try {
+        const headers = new Headers(options?.headers);
+        const token = sessionStorage.getItem('quiar-token');
+        if (token) headers.set('Authorization', 'Bearer ' + token);
+        response = await fetch(url, { ...options, headers });
+    }
     catch { throw new Error('No se pudo contactar al backend. Ejecuta npm start en Backend y revisa /api/health.'); }
     if (!response.ok) {
+        if (response.status === 401 && !url.includes('/auth/login')) resetAuth();
         const data = await response.clone().json().catch(() => ({}));
         throw new Error(data.error || 'La solicitud fallo (' + response.status + ').');
     }
     return response;
 }
 // --- FUNCIONES NAVEGADOR Y LOGIN ---
-function showAdminApp() {
+function showAdminApp(user) {
+  document.querySelector('.user-name').textContent = user.nombreCompleto;
+  document.querySelector('.user-role').textContent = user.correo;
+  obtenerCotizaciones();
+  cargarProductosDesdeBD();
+  cargarClientesDesdeBD();
+  cargarCatalogos();
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("admin-app").classList.remove("hidden");
 }
@@ -58,14 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   // 🚀 TODAS LAS TABLAS SE CARGAN AQUí AUTOMÁTICAMENTE AL RECARGAR
-  obtenerCotizaciones();
-  cargarProductosDesdeBD();
-  cargarClientesDesdeBD();
-  cargarSectoresDesdeBD();
-  cargarProveedoresDesdeBD();
-  cargarEspecialistasDesdeBD();
-  cargarServiciosDesdeBD();
-  cargarUsuariosDesdeBD();
+  restoreSession();
 });
 
 // --- CONTROL DEL MODAL DE PRODUCTOS ---
@@ -220,9 +225,9 @@ async function ejecutarGuardadoFinal() {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Cotización guardada exitosamente en la base de datos!');
             closeConfirmModal();
             closeQuoteModal();
+            alert('¡Cotización guardada exitosamente en la base de datos!');
             obtenerCotizaciones();
         } else {
             alert('Error al guardar: ' + (resultado.error || 'Verifica los datos'));
@@ -297,6 +302,10 @@ async function eliminarCotizacion(idPedido) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
+            if (String(cotizacionEdicionId) === String(idPedido)) {
+                closeConfirmModal();
+                closeQuoteModal();
+            }
             alert('¡Cotización eliminada exitosamente!');
             obtenerCotizaciones();
         } else {
@@ -825,15 +834,16 @@ const selectTipo = document.getElementById('c-tipo') || document.getElementById(
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert(clienteEdicionId ? '¡Cliente actualizado exitosamente!' : '¡Cliente registrado exitosamente!');
+            const mensaje = clienteEdicionId ? '¡Cliente actualizado exitosamente!' : '¡Cliente registrado exitosamente!';
             closeClientModal();
+            alert(mensaje);
             cargarClientesDesdeBD();
         } else {
             alert('Error al guardar cliente: ' + (resultado.error || 'Verifica los datos'));
         }
     } catch (error) {
         console.error("Error de red al guardar cliente:", error);
-        alert('No se pudo conectar con el servidor backend.');
+        alert(error.message || 'No se pudo completar la operacion.');
     }
 }
 // --- REGISTRAR NUEVO PRODUCTO (CAPTURA POR POSICIÓN EN MODAL) ---
@@ -880,8 +890,9 @@ async function addNewProduct(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert(productoEdicionSku ? '¡Producto actualizado exitosamente!' : '¡Producto registrado exitosamente!');
+            const mensaje = productoEdicionSku ? '¡Producto actualizado exitosamente!' : '¡Producto registrado exitosamente!';
             closeProductModal();
+            alert(mensaje);
             cargarProductosDesdeBD();
         } else {
             alert('Error al guardar producto: ' + (resultado.error || 'Verifica los datos'));
@@ -949,8 +960,8 @@ async function addNewSector(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Sector industrial registrado exitosamente!');
             closeSectorModal();     // Cierra el modal y limpia el formulario
+            alert('¡Sector industrial registrado exitosamente!');
             // cargarSectoresDesdeBD(); // Descomenta si tienes tu función para recargar la tabla
         } else {
             alert('Error al registrar sector: ' + (resultado.error || 'Verifica los datos'));
@@ -1017,8 +1028,8 @@ async function addNewSector(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Sector industrial registrado exitosamente!');
             closeSectorModal();      // Cierra el modal y limpia
+            alert('¡Sector industrial registrado exitosamente!');
             cargarSectoresDesdeBD(); // Recarga la tabla automáticamente para que aparezca
         } else {
             alert('Error al registrar sector: ' + (resultado.error || 'Verifica los datos'));
@@ -1089,8 +1100,8 @@ async function addNewSupplier(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Proveedor registrado exitosamente!');
             closeSupplierModal();      
+            alert('¡Proveedor registrado exitosamente!');
             cargarProveedoresDesdeBD(); 
         } else {
             alert('Error al registrar proveedor: ' + (resultado.error || 'Verifica los datos'));
@@ -1163,8 +1174,8 @@ async function addNewExpert(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Especialista registrado exitosamente!');
             closeSpecialistModal(); 
+            alert('¡Especialista registrado exitosamente!');
             if (typeof cargarEspecialistasDesdeBD === 'function') {
                 cargarEspecialistasDesdeBD(); 
             }
@@ -1180,13 +1191,7 @@ async function addNewExpert(event) {
 
 // --- CERRAR MODAL DE ESPECIALISTAS ---
 function closeSpecialistModal() {
-    const modal = document.getElementById('specialist-modal') || document.getElementById('modal-especialista');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    // Limpiar el formulario si existe
-    const form = document.getElementById('specialist-form') || document.querySelector('#specialist-modal form');
-    if (form) form.reset();
+    closeExpertModal();
 }
 
 // --- REGISTRAR NUEVO ESPECIALISTA ---
@@ -1214,8 +1219,8 @@ async function addNewExpert(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Especialista registrado exitosamente!');
             closeExpertModal(); // Nota: tu botón usa closeExpertModal() según el HTML
+            alert('¡Especialista registrado exitosamente!');
             if (typeof cargarEspecialistasDesdeBD === 'function') {
                 cargarEspecialistasDesdeBD(); 
             }
@@ -1299,8 +1304,8 @@ async function addNewService(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Servicio registrado exitosamente!');
             closeServiceModal(); 
+            alert('¡Servicio registrado exitosamente!');
             if (typeof cargarServiciosDesdeBD === 'function') {
                 cargarServiciosDesdeBD(); 
             }
@@ -1360,8 +1365,8 @@ async function addNewUser(event) {
         const resultado = await respuesta.json();
 
         if (respuesta.ok) {
-            alert('¡Usuario registrado exitosamente en la base de datos!');
             closeUserModal();         
+            alert('¡Usuario registrado exitosamente en la base de datos!');
             cargarUsuariosDesdeBD();   
         } else {
             alert('Error al registrar usuario: ' + (resultado.error || 'Verifica los datos'));
@@ -1416,6 +1421,7 @@ async function eliminarProducto(id) {
         });
 
         if (respuesta.ok) {
+            if (String(productoEdicionSku) === String(id)) closeProductModal();
             alert('Producto eliminado correctamente.');
             cargarProductosDesdeBD(); // Recarga la tabla
         } else {
@@ -1528,8 +1534,9 @@ async function ejecutarEliminacionProductoBD() {
         });
 
         if (respuesta.ok) {
-            alert('¡Producto eliminado correctamente!');
+            if (String(productoEdicionSku) === String(skuProductoAEliminar)) closeProductModal();
             cerrarModalConfirmacion();
+            alert('¡Producto eliminado correctamente!');
             cargarProductosDesdeBD(); // Recarga la tabla de inventario
         } else {
             const data = await respuesta.json();
@@ -1553,7 +1560,7 @@ async function prepararEditarCliente(id) {
     try {
         const respuesta = await apiFetch(`${API_BASE}/api/clientes`);
         const clientes = await respuesta.json();
-        const cliente = clientes.find(c => (c.idCliente || c.idcliente || c.id) === id);
+        const cliente = clientes.find(c => String(c.idCliente ?? c.idcliente ?? c.id) === String(id));
 
         if (!cliente) return alert('No se encontró el cliente.');
 
@@ -1575,10 +1582,10 @@ async function prepararEditarCliente(id) {
         if (document.getElementById('c-telefono')) document.getElementById('c-telefono').value = cliente.telefono || '';
         if (document.getElementById('c-correo')) document.getElementById('c-correo').value = cliente.correo || '';
         if (document.getElementById('c-ciudad')) document.getElementById('c-ciudad').value = cliente.ciudad || '';
-        if (document.getElementById('c-tipo')) document.getElementById('c-tipo').value = cliente.tipo || 'Corporativo';
+        if (document.getElementById('c-tipo')) document.getElementById('c-tipo').value = cliente.tipoCliente || cliente.tipo || 'Corporativo';
         if (document.getElementById('c-estado')) document.getElementById('c-estado').value = cliente.estado || 'Activo';
 
-        openClienteModal();
+        openClientModal();
         
         if (idInput) {
             idInput.readOnly = true;
@@ -1620,14 +1627,19 @@ function mostrarModalConfirmacionEliminarCliente() {
         `;
         document.body.appendChild(modal);
 
-        document.getElementById('btn-cancel-del-cli').onclick = () => modal.style.display = 'none';
+        document.getElementById('btn-cancel-del-cli').onclick = cerrarConfirmacionEliminarCliente;
         document.getElementById('btn-ok-del-cli').onclick = async () => {
-            modal.style.display = 'none';
             await ejecutarEliminacionClienteBD();
         };
     } else {
         modal.style.display = 'flex';
     }
+}
+
+function cerrarConfirmacionEliminarCliente() {
+    const modal = document.getElementById('modal-confirm-cliente-delete');
+    if (modal) modal.style.display = 'none';
+    clienteIdAEliminar = null;
 }
 
 async function ejecutarEliminacionClienteBD() {
@@ -1639,6 +1651,8 @@ async function ejecutarEliminacionClienteBD() {
         });
 
         if (respuesta.ok) {
+            if (String(clienteEdicionId) === String(clienteIdAEliminar)) closeClientModal();
+            cerrarConfirmacionEliminarCliente();
             alert('¡Cliente eliminado correctamente!');
             cargarClientesDesdeBD();
         } else {
@@ -1647,7 +1661,7 @@ async function ejecutarEliminacionClienteBD() {
         }
     } catch (error) {
         console.error('Error de red al eliminar cliente:', error);
-        alert('No se pudo conectar con el servidor.');
+        alert(error.message || 'No se pudo completar la operacion.');
     }
 }
 
@@ -1676,4 +1690,63 @@ function mostrarModalConfirmacionGenerica(titulo, mensaje) {
         document.getElementById('btn-gen-cancel').onclick = () => { modal.remove(); resolve(false); };
         document.getElementById('btn-gen-ok').onclick = () => { modal.remove(); resolve(true); };
     });
+}
+let registering = false;
+function setAuthMode(register) {
+    registering = register;
+    document.getElementById('auth-error').textContent = '';
+    for (const [id, group] of [['register-name', 'register-name-group'], ['register-confirm', 'register-confirm-group']]) {
+        const input = document.getElementById(id);
+        input.disabled = !register; input.required = register;
+        document.getElementById(group).classList.toggle('hidden', !register);
+    }
+    const password = document.getElementById('login-password');
+    password.minLength = register ? 8 : 1;
+    password.autocomplete = register ? 'new-password' : 'current-password';
+    document.getElementById('auth-submit').textContent = register ? 'CREAR CUENTA' : 'INICIAR SESI?N';
+    for (const [id, active] of [['auth-login-tab', !register], ['auth-register-tab', register]]) {
+        document.getElementById(id).classList.toggle('active', active);
+        document.getElementById(id).setAttribute('aria-pressed', String(active));
+    }
+    document.querySelector('.login-sub').textContent = register ? 'Crea tu cuenta para acceder al sistema de gesti?n' : 'Ingrese sus credenciales corporativas para continuar';
+}
+function resetAuth() {
+    sessionStorage.removeItem('quiar-token');
+    document.getElementById('admin-app').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+}
+async function submitAuth(event) {
+    event.preventDefault();
+    const button = document.getElementById('auth-submit');
+    if (button.disabled) return;
+    const error = document.getElementById('auth-error');
+    error.textContent = '';
+    const password = document.getElementById('login-password').value;
+    if (registering && password !== document.getElementById('register-confirm').value) {
+        error.textContent = 'Las contrase?as no coinciden.'; return;
+    }
+    button.disabled = true;
+    document.querySelectorAll('.auth-tabs button').forEach(tab => tab.disabled = true);
+    try {
+        const response = await apiFetch(API_BASE + '/api/auth/' + (registering ? 'register' : 'login'), {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ correo: document.getElementById('login-email').value.trim(), password, nombreCompleto: document.getElementById('register-name').value.trim() })
+        });
+        const data = await response.json();
+        sessionStorage.setItem('quiar-token', data.token);
+        document.getElementById('login-form').reset();
+        showAdminApp(data.usuario);
+    } catch (err) { error.textContent = err.message; }
+    finally { button.disabled = false; document.querySelectorAll('.auth-tabs button').forEach(tab => tab.disabled = false); }
+}
+async function restoreSession() {
+    if (!sessionStorage.getItem('quiar-token')) return;
+    try {
+        const data = await (await apiFetch(API_BASE + '/api/auth/me')).json();
+        showAdminApp(data.usuario);
+    } catch (error) { resetAuth(); document.getElementById('auth-error').textContent = error.message; }
+}
+async function logout() {
+    try { await apiFetch(API_BASE + '/api/auth/logout', { method: 'POST' }); resetAuth(); location.reload(); }
+    catch (error) { document.getElementById('auth-error').textContent = error.message; resetAuth(); }
 }
