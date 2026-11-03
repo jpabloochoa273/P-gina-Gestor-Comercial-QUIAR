@@ -28,6 +28,8 @@ app.get('/', (req, res) => {
 });
 
 // Registro de endpoints de la API REST
+app.use('/api/auth', require('./auth').router);
+app.use('/api', require('./auth').requireAuth);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/sectores', sectoresRoutes);
 app.use('/api/productos', productosRoutes);
